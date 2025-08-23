@@ -1,5 +1,6 @@
 const { Comment } = require("../models/comment.model");
 const { Diary } = require("../models/note.model");
+const { Like } = require("../models/like.model");
 
 // Tạo comment mới
 exports.createComment = async (req, res) => {
@@ -163,10 +164,11 @@ exports.deleteComment = async (req, res) => {
   }
 };
 
-// Like/Unlike diary
+// Toggle Like/Unlike diary
 exports.toggleLikeDiary = async (req, res) => {
   try {
     const { diaryId } = req.params;
+    const userId = req.account.id;
     
     const diary = await Diary.findOne({
       _id: diaryId,
@@ -182,15 +184,32 @@ exports.toggleLikeDiary = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy nhật ký" });
     }
 
-    // Tạo collection để lưu likes (có thể tạo model riêng sau)
-    // Tạm thời chỉ tăng/giảm count
-    const action = req.body.action; // 'like' hoặc 'unlike'
-    const increment = action === 'like' ? 1 : -1;
+    // Kiểm tra xem user đã like chưa
+    const existingLike = await Like.findOne({ userId, diaryId });
 
-    await Diary.findByIdAndUpdate(diaryId, { $inc: { likeCount: increment } });
+    let message, isLiked;
+    
+    if (existingLike) {
+      // Đã like rồi -> Unlike (xóa like)
+      await Like.deleteOne({ userId, diaryId });
+      await Diary.findByIdAndUpdate(diaryId, { $inc: { likeCount: -1 } });
+      message = "Đã bỏ thích nhật ký";
+      isLiked = false;
+    } else {
+      // Chưa like -> Like (tạo like mới)
+      await Like.create({ userId, diaryId });
+      await Diary.findByIdAndUpdate(diaryId, { $inc: { likeCount: 1 } });
+      message = "Đã thích nhật ký";
+      isLiked = true;
+    }
+
+    // Lấy số lượng like hiện tại
+    const updatedDiary = await Diary.findById(diaryId);
 
     res.status(200).json({ 
-      message: action === 'like' ? "Đã thích nhật ký" : "Đã bỏ thích nhật ký" 
+      message,
+      isLiked,
+      likeCount: updatedDiary.likeCount
     });
   } catch (error) {
     res.status(500).json({ message: "Lỗi máy chủ", error: error.message });

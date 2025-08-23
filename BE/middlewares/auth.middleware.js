@@ -36,7 +36,7 @@ module.exports = async (req, res, next) => {
     const token = authorizationHeader.split(" ")[1];
     console.log("Token:", token);
 
-    const decoded = await verifyToken(token);
+    const decoded = verifyToken(token, process.env.JWT_SECRET || 'your-secret-key');
     if (!decoded) {
       return res
         .status(403)

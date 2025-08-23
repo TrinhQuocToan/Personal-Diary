@@ -54,8 +54,8 @@ const PersonalDiary = () => {
   const fetchDiaries = async (tab = activeTab) => {
     try {
       const token = localStorage.getItem('accessToken');
-      const endpoint = tab === 'my' ? '/api/diaries/my' : '/api/diaries';
-      const response = await axios.get(`http://localhost:9999${endpoint}`, {
+      const endpoint = tab === 'my' ? '/api/my-diaries' : '/api/diaries';
+      const response = await axios.get(`http://localhost:8888${endpoint}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setDiaries(response.data.diaries);
@@ -78,11 +78,11 @@ const PersonalDiary = () => {
       };
 
       if (editingDiary) {
-        await axios.put(`http://localhost:9999/api/diaries/${editingDiary._id}`, diaryData, {
+        await axios.put(`http://localhost:8888/api/diaries/${editingDiary._id}`, diaryData, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
-        await axios.post('http://localhost:9999/api/diaries', diaryData, {
+        await axios.post('http://localhost:8888/api/diaries', diaryData, {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
@@ -122,7 +122,7 @@ const PersonalDiary = () => {
     if (window.confirm('Bạn có chắc muốn xóa nhật ký này?')) {
       try {
         const token = localStorage.getItem('accessToken');
-        await axios.delete(`http://localhost:9999/api/diaries/${id}`, {
+        await axios.delete(`http://localhost:8888/api/diaries/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         fetchDiaries();
@@ -138,14 +138,25 @@ const PersonalDiary = () => {
   const handleLike = async (diaryId) => {
     try {
       const token = localStorage.getItem('accessToken');
-      await axios.post(`http://localhost:9999/api/diaries/${diaryId}/like`, 
-        { action: 'like' },
+      const response = await axios.put(`http://localhost:8888/api/diaries/${diaryId}/like`, 
+        {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      // Refresh danh sách để cập nhật like count
-      fetchDiaries(activeTab);
+      
+      // Cập nhật trạng thái like trong state
+      setDiaries(prevDiaries => 
+        prevDiaries.map(diary => 
+          diary._id === diaryId 
+            ? { 
+                ...diary, 
+                likeCount: response.data.likeCount,
+                isLiked: response.data.isLiked 
+              }
+            : diary
+        )
+      );
     } catch (error) {
-      console.error('Error liking diary:', error);
+      console.error('Error toggling like:', error);
     }
   };
 
@@ -162,15 +173,21 @@ const PersonalDiary = () => {
   const fetchComments = async (diaryId) => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await axios.get(`http://localhost:9999/api/diaries/${diaryId}/comments`, {
+      const response = await axios.get(`http://localhost:8888/api/diaries/${diaryId}/comments`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      console.log('Comments response:', response.data);
       setComments(prev => ({
         ...prev,
-        [diaryId]: response.data.comments
+        [diaryId]: response.data.comments || []
       }));
     } catch (error) {
       console.error('Error fetching comments:', error);
+      // Set empty array on error to prevent undefined issues
+      setComments(prev => ({
+        ...prev,
+        [diaryId]: []
+      }));
     }
   };
 
@@ -190,7 +207,7 @@ const PersonalDiary = () => {
     
     try {
       const token = localStorage.getItem('accessToken');
-      await axios.post('http://localhost:9999/api/comments', 
+      await axios.post('http://localhost:8888/api/comments', 
         { diaryId, content: commentText.trim() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -460,7 +477,6 @@ const PersonalDiary = () => {
                   
                   <div className="flex items-center justify-between text-sm text-gray-500">
                     <div className="flex space-x-4">
-                      <span>👁️ {diary.viewCount || 0}</span>
                       <span>❤️ {diary.likeCount || 0}</span>
                       <button
                         onClick={() => handleViewComments(diary._id)}
@@ -470,25 +486,29 @@ const PersonalDiary = () => {
                       </button>
                     </div>
                     
-                    {/* Nút tương tác - chỉ hiển thị trong feed chung và không phải bài của mình */}
-                    {activeTab === 'all' && !isOwner && (
-                      <div className="flex space-x-2">
+                    {/* Nút tương tác */}
+                    <div className="flex space-x-2">
+                      {activeTab === 'all' && !isOwner && (
                         <button
                           onClick={() => handleLike(diary._id)}
-                          className="flex items-center space-x-1 px-3 py-1 rounded-full bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
+                          className={`flex items-center space-x-1 px-3 py-1 rounded-full transition-colors ${
+                            diary.isLiked 
+                              ? 'bg-red-100 text-red-700 border border-red-200' 
+                              : 'bg-red-50 hover:bg-red-100 text-red-600'
+                          }`}
                         >
-                          <span>❤️</span>
-                          <span>Thích</span>
+                          <span>{diary.isLiked ? '❤️' : '🤍'}</span>
+                          <span>{diary.isLiked ? 'Đã thích' : 'Thích'}</span>
                         </button>
-                        <button
-                          onClick={() => handleComment(diary._id)}
-                          className="flex items-center space-x-1 px-3 py-1 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-600 transition-colors"
-                        >
-                          <span>💬</span>
-                          <span>Bình luận</span>
-                        </button>
-                      </div>
-                    )}
+                      )}
+                      <button
+                        onClick={() => handleComment(diary._id)}
+                        className="flex items-center space-x-1 px-3 py-1 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-600 transition-colors"
+                      >
+                        <span>💬</span>
+                        <span>Bình luận</span>
+                      </button>
+                    </div>
                   </div>
                   
                   {/* Danh sách comments - hiển thị khi click vào số comment */}
@@ -511,6 +531,11 @@ const PersonalDiary = () => {
                                     <span className="font-medium text-sm text-gray-800">
                                       {comment.userId?.fullName || 'User'}
                                     </span>
+                                    {comment.userId?._id === diary.userId?._id && (
+                                      <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs font-medium">
+                                        Tác Giả
+                                      </span>
+                                    )}
                                     <span className="text-xs text-gray-500">
                                       {new Date(comment.createdAt).toLocaleDateString('vi-VN')}
                                     </span>

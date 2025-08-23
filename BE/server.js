@@ -38,7 +38,7 @@ app.use("/api", kanbanRoutes);
 app.use("/api", diaryRoutes);
 
 connectDb();
-const PORT = process.env.PORT || 9999;
+const PORT = process.env.PORT || 8888;
 app.listen(PORT, () => {
   console.log(`Server is running on port http://localhost:${PORT}`);
 });

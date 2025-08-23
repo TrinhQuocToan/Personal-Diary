@@ -82,7 +82,7 @@ const loginAccount = async (req, res, next) => {
 
         const accessToken = await createAccessToken({ id: user._id, role: user.role });
         console.log("accessToken",accessToken);
-        const refreshToken = await createRefreshToken();
+        const refreshToken = await createRefreshToken({ id: user._id });
         console.log("refreshToken",refreshToken);
         const t = await UserToken.findOneAndUpdate(
             { user: user._id },
@@ -94,7 +94,7 @@ const loginAccount = async (req, res, next) => {
         return res.status(200).json({
             message: "Login successfully",
             accessToken: accessToken,
-            re_token: refreshToken,
+            refreshToken: refreshToken,
         });
     } catch (error) {
         return res

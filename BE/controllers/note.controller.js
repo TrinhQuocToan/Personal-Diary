@@ -1,6 +1,6 @@
-const { Diary } = require("../models/note.model");
-const { Comment } = require("../models/comment.model");
 const mongoose = require("mongoose");
+const { Diary } = require("../models/note.model");
+const { Like } = require("../models/like.model");
 
 // Lấy tất cả nhật ký (của user và public)
 exports.showAllDiaries = async (req, res) => {
@@ -28,10 +28,25 @@ exports.showAllDiaries = async (req, res) => {
       .skip(skip)
       .limit(parseInt(limit));
 
+    // Thêm thông tin like status cho từng diary
+    const diariesWithLikeStatus = await Promise.all(
+      diaries.map(async (diary) => {
+        const isLiked = await Like.findOne({ 
+          userId: req.account.id, 
+          diaryId: diary._id 
+        });
+        
+        return {
+          ...diary.toObject(),
+          isLiked: !!isLiked
+        };
+      })
+    );
+
     const total = await Diary.countDocuments(filter);
 
     res.status(200).json({
-      diaries,
+      diaries: diariesWithLikeStatus,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -60,10 +75,25 @@ exports.getMyDiaries = async (req, res) => {
       .skip(skip)
       .limit(parseInt(limit));
 
+    // Thêm thông tin like status cho từng diary
+    const diariesWithLikeStatus = await Promise.all(
+      diaries.map(async (diary) => {
+        const isLiked = await Like.findOne({ 
+          userId: req.account.id, 
+          diaryId: diary._id 
+        });
+        
+        return {
+          ...diary.toObject(),
+          isLiked: !!isLiked
+        };
+      })
+    );
+
     const total = await Diary.countDocuments(filter);
 
     res.status(200).json({
-      diaries,
+      diaries: diariesWithLikeStatus,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
