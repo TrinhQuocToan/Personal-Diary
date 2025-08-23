@@ -1,0 +1,81 @@
+.profile-container {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.profile-container h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.profile-form-row {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-form-row label {
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #555;
+}
+
+.profile-form-row input[type="text"],
+.profile-form-row input[type="date"],
+.profile-form-row input[type="email"] {
+  padding: 8px 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  transition: border-color 0.3s ease;
+}
+
+.profile-form-row input[type="text"]:focus,
+.profile-form-row input[type="date"]:focus,
+.profile-form-row input[type="email"]:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+.mt-3 {
+  margin-top: 1rem;
+}
+
+.text-center {
+  text-align: center;
+}
+
+button[type="submit"] {
+  background-color: #007bff;
+  color: white;
+  font-weight: 600;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button[type="submit"]:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+button[type="submit"]:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.text-success {
+  color: #28a745;
+  margin-top: 10px;
+}
+
+.text-danger {
+  color: #dc3545;
+  margin-top: 10px;
+}
