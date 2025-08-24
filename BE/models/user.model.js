@@ -48,7 +48,7 @@ const userSchema = new mongoose.Schema(
     avatar: { type: String, default: "" },
     otp: { type: String, default: null },
     otpExpiration: { type: Date, default: null },
-    role: { type: String, default: "user" },
+    role: { type: String, enum: ["user", "admin"], default: "user" },
     // Soft delete
     isDeleted: {
       type: Boolean,

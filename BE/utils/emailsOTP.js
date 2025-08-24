@@ -1,84 +1,40 @@
-const nodemailer = require('nodemailer');
+const nodemailer = require("nodemailer");
 
-// Create transporter for sending emails
-const createTransporter = () => {
-  return nodemailer.createTransporter({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER || 'your-email@gmail.com',
-      pass: process.env.EMAIL_PASSWORD || 'your-app-password'
-    }
-  });
-};
-
-// Generate random OTP
-const generateOTP = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-};
-
-// Send OTP email
 const sendOTPEmail = async (email, otp) => {
   try {
-    const transporter = createTransporter();
-    
+    // Create a transporter using Gmail SMTP
+    const transporter = nodemailer.createTransport({
+      service: "Gmail",
+      auth: {
+        user: process.env.EMAIL_USER || "kubinduong2002@gmail.com",
+        pass: process.env.EMAIL_PASS || "wubr bysj fvrk rvju",
+      },
+    });
+
+    // Email content
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'your-email@gmail.com',
+      from: `"Personal Diary" <${process.env.EMAIL_USER || "kubinduong2002@gmail.com"}>`,
       to: email,
-      subject: 'Personal Diary - OTP Verification',
+      subject: "Your OTP for Password Reset",
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Personal Diary - OTP Verification</h2>
-          <p>Your OTP code is:</p>
-          <div style="background-color: #f4f4f4; padding: 20px; text-align: center; font-size: 24px; font-weight: bold; color: #333; border-radius: 5px;">
-            ${otp}
-          </div>
-          <p>This OTP will expire in 10 minutes.</p>
-          <p>If you didn't request this, please ignore this email.</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2>Password Reset OTP</h2>
+          <p>Hello,</p>
+          <p>You have requested to reset your password for your Personal Diary account. Please use the following One-Time Password (OTP) to proceed:</p>
+          <h3 style="background-color: #f0f0f0; padding: 10px; text-align: center; font-size: 24px;">${otp}</h3>
+          <p>This OTP is valid for 5 minutes. If you did not request a password reset, please ignore this email or contact support.</p>
+          <p>Thank you,<br/>The Personal Diary Team</p>
         </div>
-      `
+      `,
     };
 
-    const result = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: result.messageId };
+    // Send the email
+    await transporter.sendMail(mailOptions);
+    console.log(`OTP email sent to ${email}`);
   } catch (error) {
-    console.error('Error sending OTP email:', error);
-    return { success: false, error: error.message };
+    console.error("Error sending OTP email:", error);
+    throw new Error("Failed to send OTP email");
   }
 };
 
-// Send password reset email
-const sendPasswordResetEmail = async (email, resetToken) => {
-  try {
-    const transporter = createTransporter();
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
-    
-    const mailOptions = {
-      from: process.env.EMAIL_USER || 'your-email@gmail.com',
-      to: email,
-      subject: 'Personal Diary - Password Reset',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Personal Diary - Password Reset</h2>
-          <p>You requested a password reset. Click the link below to reset your password:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
-          </div>
-          <p>This link will expire in 1 hour.</p>
-          <p>If you didn't request this, please ignore this email.</p>
-        </div>
-      `
-    };
-
-    const result = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: result.messageId };
-  } catch (error) {
-    console.error('Error sending password reset email:', error);
-    return { success: false, error: error.message };
-  }
-};
-
-module.exports = {
-  sendOTPEmail,
-  sendPasswordResetEmail,
-  generateOTP
-};
+module.exports = { sendOTPEmail };
