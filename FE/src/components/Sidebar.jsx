@@ -49,7 +49,7 @@ const Sidebar = () => {
               onClick={handleCloseSideBar}
               className="items-center gap-3 ml-3 mt-4 flex text-xl font-extrabold tracking-tight dark:text-white text-slate-900"
             >
-              <SiShopware /> <span>Personal Management</span>
+              <SiShopware /> <span>MyDiary</span>
             </Link>
             <TooltipComponent content="Menu" position="BottomCenter">
               <button
@@ -66,7 +66,7 @@ const Sidebar = () => {
             {/* Main Navigation */}
             <div>
               <p className="text-gray-400 dark:text-gray-400 m-3 mt-4 uppercase">
-                Main
+                MyDiary
               </p>
               <NavLink
                 to="/"
@@ -79,7 +79,7 @@ const Sidebar = () => {
                 }
               >
                 <FiFileText />
-                <span className="capitalize">Notes</span>
+                <span className="capitalize">Nhật ký</span>
               </NavLink>
               <NavLink
                 to="/profile"
@@ -92,7 +92,7 @@ const Sidebar = () => {
                 }
               >
                 <FiUsers />
-                <span className="capitalize">Profile</span>
+                <span className="capitalize">Hồ sơ</span>
               </NavLink>
             </div>
 

@@ -400,7 +400,7 @@ const PersonalDiary = () => {
                 : 'text-gray-600 hover:text-gray-800'
                 }`}
             >
-              🌍 Feed chung
+              🌍 Cộng đồng
             </button>
             <button
               onClick={() => setActiveTab('my')}
