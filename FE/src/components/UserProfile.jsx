@@ -1,6 +1,15 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { MdOutlineCancel } from "react-icons/md";
+import {
+  MdOutlineCancel,
+  MdCameraAlt,
+  MdSettings,
+  MdAccountBox,
+  MdNotifications,
+  MdSecurity,
+  MdHelp,
+  MdLogout,
+  MdEdit,
+} from "react-icons/md";
 import { useNavigate } from "react-router-dom";
 
 import { useStateContext } from "../contexts/ContextProvider";
@@ -24,9 +33,7 @@ const UserProfile = () => {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const response = await axiosInstance.get(
-          "/api/user/jwt-current"
-        );
+        const response = await axiosInstance.get("/api/user/jwt-current");
         setProfile({
           _id: response.data._id || "",
           fullName: response.data.fullName || "",
@@ -95,87 +102,99 @@ const UserProfile = () => {
 
   if (loading) {
     return (
-      <div className="nav-item absolute right-1 top-16 bg-white dark:bg-[#42464D] p-8 rounded-lg w-96">
-        <p className="text-center dark:text-gray-200">Loading user data...</p>
+      <div className="fixed right-4 top-16 w-96 bg-white rounded-3xl shadow-2xl border border-gray-100 p-8 backdrop-blur-md bg-opacity-95">
+        <div className="flex items-center justify-center h-48">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <span className="ml-3 text-gray-600">Loading user data...</span>
+        </div>
       </div>
     );
   }
 
   if (saveError) {
     return (
-      <div className="nav-item absolute right-1 top-16 bg-white dark:bg-[#42464D] p-8 rounded-lg w-96">
-        <p className="text-center text-red-500">Error: {saveError}</p>
+      <div className="fixed right-4 top-16 w-96 bg-white rounded-3xl shadow-2xl border border-red-200 p-8">
+        <div className="text-center">
+          <div className="text-red-500 text-lg font-semibold mb-2">Error</div>
+          <p className="text-red-600">{saveError}</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="nav-item absolute right-1 top-16 bg-white dark:bg-[#42464D] p-8 rounded-lg w-96">
-      <div className="flex justify-between items-center">
-        <p className="font-semibold text-lg dark:text-gray-200">User Profile</p>
-        <button
-          type="button"
-          onClick={() => { }}
-          className="text-2xl p-3 hover:drop-shadow-xl hover:bg-light-gray rounded-full"
-          style={{ color: "rgb(153, 171, 180)" }}
-        >
-          <MdOutlineCancel />
-        </button>
-      </div>
-      <div className="flex gap-5 items-center mt-6 border-color border-b-1 pb-6">
-        <img
-          className="rounded-full h-24 w-24"
-          src={
-            profile.avatar
-              ? `http://localhost:9999${profile.avatar}`
-              : avatarPlaceholder
-          }
-          alt="user-profile"
-        />
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleFileChange}
-          disabled={uploading}
-          style={{ marginLeft: "10px" }}
-        />
-      </div>
-      <div>
-        <p className="font-semibold text-xl dark:text-gray-200 mt-4">
-          {profile.fullName || "Unknown User"}
-        </p>
-        <p className="text-gray-500 text-sm dark:text-gray-400">
-          {profile.gender || "User"}
-        </p>
-        <p className="text-gray-500 text-sm font-semibold dark:text-gray-400">
-          {profile.dob || ""}
-        </p>
-      </div>
-      <div>
-        <div className="flex gap-5 border-b-1 border-color p-4 hover:bg-light-gray cursor-pointer dark:hover:bg-[#42464D]">
+    <div className="fixed right-4 top-16 w-96 bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden backdrop-blur-md bg-opacity-98 z-50">
+      {/* Header với gradient background */}
+      <div className="relative bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 p-6">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+
+        <div className="relative flex justify-between items-center">
+          <h3 className="text-white font-bold text-lg">User Profile</h3>
           <button
             type="button"
-            style={{ color: "#03C9D7", backgroundColor: "#E5FAFB" }}
-            className="text-xl rounded-lg p-3 hover:bg-light-gray"
+            onClick={() => { }}
+            className="text-2xl p-3 hover:drop-shadow-xl hover:bg-light-gray rounded-full"
+            style={{ color: "rgb(153, 171, 180)" }}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
+            <MdOutlineCancel />
           </button>
-          <div>
-            <p className="font-semibold dark:text-gray-200">Profile Info</p>
-            <p className="text-gray-500 text-sm dark:text-gray-400">
-              View and edit your profile information
-            </p>
+        </div>
+
+        {/* Decorative elements */}
+        <div className="absolute top-2 right-16 w-12 h-12 bg-white/10 rounded-full blur-xl"></div>
+        <div className="absolute bottom-4 left-8 w-8 h-8 bg-white/5 rounded-full blur-lg"></div>
+      </div>
+
+      {/* Avatar Section */}
+      <div className="px-6 pt-4 pb-2 -mt-8 relative z-10">
+        <div className="flex flex-col items-center">
+          <div className="relative group mb-4">
+            {/* Avatar container với hiệu ứng 3D */}
+            <div className="relative">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-400 to-purple-500 p-0.5 shadow-lg transform group-hover:scale-105 transition-all duration-300">
+                <div className="w-full h-full rounded-2xl overflow-hidden bg-white">
+                  {profile.avatar ? (
+                    <img
+                      src={`http://localhost:9999${profile.avatar}`}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <img
+                      src={avatarPlaceholder}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Status indicator */}
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+            </div>
+          </div>
+
+          {/* User info */}
+          <div className="text-center mb-4">
+            <h4 className="font-bold text-gray-800 text-lg mb-1 flex items-center justify-center gap-2">
+              {profile.fullName || "Unknown User"}
+              <MdEdit
+                className="text-gray-400 text-sm cursor-pointer hover:text-blue-500 transition-colors"
+                onClick={() => navigate("/profile")}
+              />
+            </h4>
           </div>
         </div>
       </div>
-      <div className="mt-5">
+
+      {/* Logout Button */}
+      <div className="px-6 pb-6">
         <button
-          className={`w-full p-3 rounded-[10px] text-white`}
-          style={{ backgroundColor: currentColor }}
           onClick={handleLogout}
+          className={`w-full font-semibold py-3 px-4 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2 group text-white`}
+          style={{ backgroundColor: currentColor }}
         >
+          <MdLogout className="text-lg group-hover:translate-x-1 transition-transform duration-200" />
           Logout
         </button>
       </div>

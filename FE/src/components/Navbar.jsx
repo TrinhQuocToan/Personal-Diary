@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { AiOutlineMenu } from "react-icons/ai";
 import { FiShoppingCart } from "react-icons/fi";
 import { BsChatLeft } from "react-icons/bs";
@@ -8,7 +8,9 @@ import { TooltipComponent } from "@syncfusion/ej2-react-popups";
 
 import avatar from "../data/avatar.jpg";
 import { Notification, UserProfile } from ".";
+import avatarPlaceholder from "../data/avatar.jpg";
 import { useStateContext } from "../contexts/ContextProvider";
+import axiosInstance from "../pages/Authentication/helper/axiosInstance";
 
 const NavButton = ({ title, customFunc, icon, color, dotColor }) => (
   <TooltipComponent content={title} position="BottomCenter">
@@ -38,6 +40,9 @@ const Navbar = () => {
     screenSize,
   } = useStateContext();
 
+  const [avatarSrc, setAvatarSrc] = useState(avatarPlaceholder);
+  const [loadingAvatar, setLoadingAvatar] = useState(true);
+
   useEffect(() => {
     const handleResize = () => setScreenSize(window.innerWidth);
 
@@ -57,6 +62,47 @@ const Navbar = () => {
   }, [screenSize]);
 
   const handleActiveMenu = () => setActiveMenu(!activeMenu);
+
+  // --- New effect: fetch current user's avatar like UserProfile does ---
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchAvatar = async () => {
+      try {
+        setLoadingAvatar(true);
+        const response = await axiosInstance.get("/api/user/jwt-current");
+        const serverAvatar = response?.data?.avatar;
+
+        if (!isMounted) return;
+
+        if (serverAvatar) {
+          // Prefer absolute URL from server if provided; else prefix with axios baseURL or fallback host
+          const isAbsolute = /^https?:\/\//i.test(serverAvatar);
+          const baseUrl =
+            axiosInstance?.defaults?.baseURL || "http://localhost:9999";
+          const fullAvatar = isAbsolute
+            ? serverAvatar
+            : `${baseUrl}${serverAvatar}`;
+
+          setAvatarSrc(fullAvatar);
+        } else {
+          setAvatarSrc(avatarPlaceholder);
+        }
+      } catch (err) {
+        console.error("Navbar: error fetching avatar", err?.response || err);
+        // keep placeholder on error
+        setAvatarSrc(avatarPlaceholder);
+      } finally {
+        if (isMounted) setLoadingAvatar(false);
+      }
+    };
+
+    fetchAvatar();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   return (
     <div className="flex justify-between p-2 md:ml-6 md:mr-6 relative">
@@ -80,14 +126,10 @@ const Navbar = () => {
             onClick={() => handleClick("userProfile")}
           >
             <img
-              className="rounded-full w-8 h-8"
-              src={avatar}
+              className="rounded-full w-8 h-8 object-cover"
+              src={avatarSrc}
               alt="user-profile"
             />
-            {/* <p>
-              <span className="text-gray-400 text-14">Hi</span>{" "}
-              <span className="text-gray-400 font-bold ml-1 text-14"></span>
-            </p> */}
             <MdKeyboardArrowDown className="text-gray-400 text-14" />
           </div>
         </TooltipComponent>
