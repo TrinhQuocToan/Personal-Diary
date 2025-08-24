@@ -1,19 +1,7 @@
-// const mongoose = require("mongoose")
-// const userSchema = new mongoose.Schema({
-//     username: String,
-//     email: String,
-//     password: String,
-//     fullName: String,
-//     gender: { type: String, enum: ["Male", "Female", "Other"] },
-//     dob: { type: Date }
-// }, { timestamps: false, versionKey: false })
-
-// const User = mongoose.model('User', userSchema)
-// module.exports = User
-
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const validator = require("validator");
+
 const userSchema = new mongoose.Schema(
   {
     fullName: String,
@@ -39,12 +27,14 @@ const userSchema = new mongoose.Schema(
       required: true,
       trim: true,
       minlength: [4, "Username must be at least 4 characters"],
+      unique: true,
     },
     email: {
       type: String,
       required: true,
       trim: true,
       lowercase: true,
+      unique: true,
       validate: [validator.isEmail, "Invalid email format"],
     },
     password: {
@@ -58,20 +48,13 @@ const userSchema = new mongoose.Schema(
     avatar: { type: String, default: "" },
     otp: { type: String, default: null },
     otpExpiration: { type: Date, default: null },
+    role: { type: String, default: "user" },
   },
   { timestamps: true, versionKey: false }
 );
 
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (err) {
-    next(err);
-  }
-});
+// Remove pre-save hook since we're handling password hashing in controllers
+// This prevents double hashing
 
 const User = mongoose.model("User", userSchema);
 module.exports = User;

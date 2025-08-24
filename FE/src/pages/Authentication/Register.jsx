@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axiosInstance from './helper/axiosInstance';
 
 const RegisterForm = () => {
   const [formData, setFormData] = useState({
@@ -38,7 +38,7 @@ const RegisterForm = () => {
 
 
     try {
-      const response = await axios.post("/api/register", formData);
+      const response = await axiosInstance.post("/api/register", formData);
 
       if (response.status === 201) {
         setSuccess('Registration successful!, will back to login page in 3 seconds');

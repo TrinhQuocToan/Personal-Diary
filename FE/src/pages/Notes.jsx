@@ -12,7 +12,7 @@ const PersonalDiary = () => {
   const [showComments, setShowComments] = useState(null); // ID của bài đang xem comments
   const [comments, setComments] = useState({}); // Object chứa comments của từng bài
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [selectedDiary, setSelectedDiary] = useState(null); 
+  const [selectedDiary, setSelectedDiary] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -55,7 +55,7 @@ const PersonalDiary = () => {
     try {
       const token = localStorage.getItem('accessToken');
       const endpoint = tab === 'my' ? '/api/my-diaries' : '/api/diaries';
-      const response = await axios.get(`http://localhost:8888${endpoint}`, {
+      const response = await axios.get(`http://localhost:9999${endpoint}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setDiaries(response.data.diaries);
@@ -71,18 +71,18 @@ const PersonalDiary = () => {
     try {
       const token = localStorage.getItem('accessToken');
       const tagsArray = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
-      
+
       const diaryData = {
         ...formData,
         tags: tagsArray
       };
 
       if (editingDiary) {
-        await axios.put(`http://localhost:8888/api/diaries/${editingDiary._id}`, diaryData, {
+        await axios.put(`http://localhost:9999/api/diaries/${editingDiary._id}`, diaryData, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
-        await axios.post('http://localhost:8888/api/diaries', diaryData, {
+        await axios.post('http://localhost:9999/api/diaries', diaryData, {
           headers: { Authorization: `Bearer ${token}` }
         });
       }
@@ -122,7 +122,7 @@ const PersonalDiary = () => {
     if (window.confirm('Bạn có chắc muốn xóa nhật ký này?')) {
       try {
         const token = localStorage.getItem('accessToken');
-        await axios.delete(`http://localhost:8888/api/diaries/${id}`, {
+        await axios.delete(`http://localhost:9999/api/diaries/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         fetchDiaries();
@@ -138,20 +138,20 @@ const PersonalDiary = () => {
   const handleLike = async (diaryId) => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await axios.put(`http://localhost:8888/api/diaries/${diaryId}/like`, 
+      const response = await axios.put(`http://localhost:9999/api/diaries/${diaryId}/like`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       // Cập nhật trạng thái like trong state
-      setDiaries(prevDiaries => 
-        prevDiaries.map(diary => 
-          diary._id === diaryId 
-            ? { 
-                ...diary, 
-                likeCount: response.data.likeCount,
-                isLiked: response.data.isLiked 
-              }
+      setDiaries(prevDiaries =>
+        prevDiaries.map(diary =>
+          diary._id === diaryId
+            ? {
+              ...diary,
+              likeCount: response.data.likeCount,
+              isLiked: response.data.isLiked
+            }
             : diary
         )
       );
@@ -173,7 +173,7 @@ const PersonalDiary = () => {
   const fetchComments = async (diaryId) => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await axios.get(`http://localhost:8888/api/diaries/${diaryId}/comments`, {
+      const response = await axios.get(`http://localhost:9999/api/diaries/${diaryId}/comments`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('Comments response:', response.data);
@@ -204,10 +204,10 @@ const PersonalDiary = () => {
 
   const handleSubmitComment = async (diaryId) => {
     if (!commentText.trim()) return;
-    
+
     try {
       const token = localStorage.getItem('accessToken');
-      await axios.post('http://localhost:8888/api/comments', 
+      await axios.post('http://localhost:9999/api/comments',
         { diaryId, content: commentText.trim() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -234,33 +234,31 @@ const PersonalDiary = () => {
   return (
     <div className="m-2 md:m-10 mt-24 p-2 md:p-10 bg-white rounded-3xl">
       <Header category="Personal" title="Nhật Ký Cá Nhân" />
-      
+
       <div className="mt-5">
         {/* Tabs */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setActiveTab('all')}
-              className={`px-4 py-2 rounded-md transition-colors ${
-                activeTab === 'all'
+              className={`px-4 py-2 rounded-md transition-colors ${activeTab === 'all'
                   ? 'bg-white text-blue-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-800'
-              }`}
+                }`}
             >
               🌍 Feed chung
             </button>
             <button
               onClick={() => setActiveTab('my')}
-              className={`px-4 py-2 rounded-md transition-colors ${
-                activeTab === 'my'
+              className={`px-4 py-2 rounded-md transition-colors ${activeTab === 'my'
                   ? 'bg-white text-blue-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-800'
-              }`}
+                }`}
             >
               📖 Nhật ký của tôi
             </button>
           </div>
-          
+
           <button
             onClick={() => setShowCreateForm(true)}
             className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors"
@@ -276,14 +274,14 @@ const PersonalDiary = () => {
               <h3 className="text-xl font-semibold mb-4">
                 {editingDiary ? 'Chỉnh sửa nhật ký' : 'Viết nhật ký mới'}
               </h3>
-              
+
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">Tiêu đề</label>
                   <input
                     type="text"
                     value={formData.title}
-                    onChange={(e) => setFormData({...formData, title: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
                   />
@@ -294,7 +292,7 @@ const PersonalDiary = () => {
                     <label className="block text-sm font-medium mb-2">Tâm trạng</label>
                     <select
                       value={formData.mood}
-                      onChange={(e) => setFormData({...formData, mood: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, mood: e.target.value })}
                       className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     >
                       {moods.map(mood => (
@@ -307,7 +305,7 @@ const PersonalDiary = () => {
                     <label className="block text-sm font-medium mb-2">Thời tiết</label>
                     <select
                       value={formData.weather}
-                      onChange={(e) => setFormData({...formData, weather: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, weather: e.target.value })}
                       className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     >
                       {weathers.map(weather => (
@@ -321,7 +319,7 @@ const PersonalDiary = () => {
                   <label className="block text-sm font-medium mb-2">Nội dung</label>
                   <textarea
                     value={formData.content}
-                    onChange={(e) => setFormData({...formData, content: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                     rows="6"
                     className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     placeholder="Hôm nay của bạn như thế nào..."
@@ -334,7 +332,7 @@ const PersonalDiary = () => {
                   <input
                     type="text"
                     value={formData.location}
-                    onChange={(e) => setFormData({...formData, location: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     placeholder="Bạn đang ở đâu?"
                   />
@@ -345,7 +343,7 @@ const PersonalDiary = () => {
                   <input
                     type="text"
                     value={formData.tags}
-                    onChange={(e) => setFormData({...formData, tags: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
                     className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     placeholder="gia đình, công việc, du lịch..."
                   />
@@ -356,7 +354,7 @@ const PersonalDiary = () => {
                     type="checkbox"
                     id="isPublic"
                     checked={formData.isPublic}
-                    onChange={(e) => setFormData({...formData, isPublic: e.target.checked})}
+                    onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
                     className="mr-2"
                   />
                   <label htmlFor="isPublic" className="text-sm">
@@ -405,8 +403,8 @@ const PersonalDiary = () => {
                 {activeTab === 'all' ? 'Chưa có bài đăng công khai nào' : 'Chưa có nhật ký nào'}
               </p>
               <p>
-                {activeTab === 'all' 
-                  ? 'Hãy tạo bài đăng công khai để chia sẻ với mọi người!' 
+                {activeTab === 'all'
+                  ? 'Hãy tạo bài đăng công khai để chia sẻ với mọi người!'
                   : 'Hãy bắt đầu ghi lại những khoảnh khắc đáng nhớ!'
                 }
               </p>
@@ -417,7 +415,7 @@ const PersonalDiary = () => {
               const weatherInfo = getWeatherInfo(diary.weather);
               const currentUserId = localStorage.getItem('userId'); // Cần lấy từ token hoặc context
               const isOwner = diary.userId._id === currentUserId || activeTab === 'my';
-              
+
               return (
                 <div key={diary._id} className="bg-gray-50 rounded-lg p-6 hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start mb-3">
@@ -431,7 +429,7 @@ const PersonalDiary = () => {
                           <span className="text-sm font-medium text-gray-700">{diary.userId.fullName || 'User'}</span>
                         </div>
                       )}
-                      
+
                       <h3 className="text-xl font-semibold text-gray-800 mb-2">{diary.title}</h3>
                       <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
                         <span className={`px-2 py-1 rounded-full ${moodInfo.color}`}>
@@ -443,7 +441,7 @@ const PersonalDiary = () => {
                         {diary.isPublic && <span className="text-green-600">🌍 Công khai</span>}
                       </div>
                     </div>
-                    
+
                     {/* Chỉ hiển thị nút edit/delete nếu là chủ sở hữu */}
                     {isOwner && (
                       <div className="flex space-x-2">
@@ -462,9 +460,9 @@ const PersonalDiary = () => {
                       </div>
                     )}
                   </div>
-                  
+
                   <p className="text-gray-700 mb-3 line-clamp-3">{diary.content}</p>
-                  
+
                   {diary.tags && diary.tags.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-3">
                       {diary.tags.map((tag, index) => (
@@ -474,7 +472,7 @@ const PersonalDiary = () => {
                       ))}
                     </div>
                   )}
-                  
+
                   <div className="flex items-center justify-between text-sm text-gray-500">
                     <div className="flex space-x-4">
                       <span>❤️ {diary.likeCount || 0}</span>
@@ -485,17 +483,16 @@ const PersonalDiary = () => {
                         💬 {diary.commentCount || 0}
                       </button>
                     </div>
-                    
+
                     {/* Nút tương tác */}
                     <div className="flex space-x-2">
                       {activeTab === 'all' && !isOwner && (
                         <button
                           onClick={() => handleLike(diary._id)}
-                          className={`flex items-center space-x-1 px-3 py-1 rounded-full transition-colors ${
-                            diary.isLiked 
-                              ? 'bg-red-100 text-red-700 border border-red-200' 
+                          className={`flex items-center space-x-1 px-3 py-1 rounded-full transition-colors ${diary.isLiked
+                              ? 'bg-red-100 text-red-700 border border-red-200'
                               : 'bg-red-50 hover:bg-red-100 text-red-600'
-                          }`}
+                            }`}
                         >
                           <span>{diary.isLiked ? '❤️' : '🤍'}</span>
                           <span>{diary.isLiked ? 'Đã thích' : 'Thích'}</span>
@@ -510,14 +507,14 @@ const PersonalDiary = () => {
                       </button>
                     </div>
                   </div>
-                  
+
                   {/* Danh sách comments - hiển thị khi click vào số comment */}
                   {showComments === diary._id && (
                     <div className="mt-4 border-t pt-4">
                       <h4 className="font-semibold mb-3 text-gray-800">
                         Bình luận ({diary.commentCount || 0})
                       </h4>
-                      
+
                       {comments[diary._id] && comments[diary._id].length > 0 ? (
                         <div className="space-y-3 mb-4">
                           {comments[diary._id].map((comment) => (
@@ -549,7 +546,7 @@ const PersonalDiary = () => {
                       ) : (
                         <p className="text-gray-500 text-sm mb-4">Chưa có bình luận nào</p>
                       )}
-                      
+
                       {/* Form thêm comment mới */}
                       {activeTab === 'all' && !isOwner && (
                         <div className="border-t pt-3">

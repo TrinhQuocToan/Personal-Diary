@@ -10,35 +10,35 @@ const account = require("./routes/account.route");
 const kanbanRoutes = require("./routes/kanban.route");
 const diaryRoutes = require("./routes/note.routes");
 
-
 const app = express();
 app.use(cors());
-
-app.use(bodyParser.json()); 
+app.use(express.json());
+app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 // Serve static files from uploads directory
 app.use("/uploads", express.static("uploads"));
-mongoose
-  .connect(`${process.env.MONGO_URI}`, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
-    console.log("✅ Kết nối MongoDB thành công!");
-  })
-  .catch((err) => {
-    console.error("❌ Kết nối MongoDB thất bại:", err.message);
-  });
 
-app.use("/api/user", userRouter);
-// app.use("/api", userRouter);
-app.use("/api", calendarRoutes);
+// Initialize routes
 app.use("/api", account);
+app.use("/api/user", userRouter);
+app.use("/api", calendarRoutes);
 app.use("/api", kanbanRoutes);
 app.use("/api", diaryRoutes);
 
-connectDb();
-const PORT = process.env.PORT || 8888;
-app.listen(PORT, () => {
-  console.log(`Server is running on port http://localhost:${PORT}`);
-});
+// Connect to database and start server
+const startServer = async () => {
+  try {
+    // Connect to MongoDB
+    await connectDb();
+
+    const PORT = process.env.PORT || 9999;
+    app.listen(PORT, () => {
+      console.log(`✅ Server is running on port http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error("❌ Failed to start server:", error);
+    process.exit(1);
+  }
+};
+
+startServer();

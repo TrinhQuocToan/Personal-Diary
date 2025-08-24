@@ -1,7 +1,7 @@
 const bcrypt = require("bcryptjs");
 const User = require("../models/user.model");
 const UserToken = require("../models/userToken.model");
-const { createAccessToken, createRefreshToken } = require("../utils/jwt");
+const { createAccessToken, createRefreshToken, verifyRefreshToken } = require("../utils/jwt");
 const { sendOTPEmail } = require("../utils/emailsOTP");
 
 const registerAccount = async (req, res) => {
@@ -10,6 +10,7 @@ const registerAccount = async (req, res) => {
         if (!email || !username || !password || !fullName) {
             return res.status(400).json({ message: "Please enter complete information!" });
         }
+
         const existingUser = await User.findOne({
             $or: [{ email }, { username }],
         });
@@ -22,16 +23,20 @@ const registerAccount = async (req, res) => {
                         : "Username already exists",
             });
         }
-        console.log("pass register",password)
-        // const hashedPassword = await bcrypt.hash(password, 10);
+
+        console.log("pass register", password);
+        // Hash password before saving
+        const hashedPassword = await bcrypt.hash(password, 10);
+
         const newUser = new User({
             email,
             username,
-            password,
+            password: hashedPassword, // Use hashed password
             fullName,
             gender,
             dob,
         });
+
         await newUser.save();
         const { password: _, ...userWithoutPassword } = newUser.toObject();
         return res.status(201).json({
@@ -48,6 +53,15 @@ const registerAccount = async (req, res) => {
                 errors: validationErrors,
             });
         }
+
+        // Handle database case sensitivity error
+        if (error.message && error.message.includes('already exists with different case')) {
+            return res.status(500).json({
+                message: "Database configuration error. Please contact administrator.",
+                error: "Database case sensitivity issue"
+            });
+        }
+
         return res.status(500).json({
             message: "Error while registering",
             error: error.message,
@@ -58,7 +72,7 @@ const registerAccount = async (req, res) => {
 const loginAccount = async (req, res, next) => {
     try {
         const { username, password } = req.body;
-        console.log("hieu",username);
+        console.log("hieu", username);
         if (!username || !password) {
             return res
                 .status(400)
@@ -66,14 +80,14 @@ const loginAccount = async (req, res, next) => {
         }
 
         const user = await User.findOne({ username });
-        console.log("user",user);
+        console.log("user", user);
         if (!user) {
             return res.status(404).json({
                 message: "Account not registered!!",
             });
         }
         const password1 = await bcrypt.compare(password, user.password);
-        console.log("password1",password,user.password,password1);
+        console.log("password1", password, user.password, password1);
         if (!user || !password1) {
             return res
                 .status(401)
@@ -81,15 +95,15 @@ const loginAccount = async (req, res, next) => {
         }
 
         const accessToken = await createAccessToken({ id: user._id, role: user.role });
-        console.log("accessToken",accessToken);
+        console.log("accessToken", accessToken);
         const refreshToken = await createRefreshToken({ id: user._id });
-        console.log("refreshToken",refreshToken);
+        console.log("refreshToken", refreshToken);
         const t = await UserToken.findOneAndUpdate(
             { user: user._id },
             { re_token: refreshToken },
             { upsert: true, new: true }
         );
-        console.log("t",t);
+        console.log("t", t);
 
         return res.status(200).json({
             message: "Login successfully",
@@ -130,18 +144,18 @@ const forgotPassword = async (req, res, next) => {
         if (!email)
             return res.status(400).json({ message: "Please enter email !!" });
         const user = await User.findOne({ email });
-        console.log("11111",user);
+        console.log("11111", user);
         if (!user) return res.status(404).json({ message: "Email does not exist" });
 
         const otp = Math.floor(100000 + Math.random() * 900000);
         const hashedOtp = await bcrypt.hash(otp.toString(), 10);
         const otpExpiration = new Date(Date.now() + 5 + 60 * 1000);
-        console.log("otpExpiration",otpExpiration);
+        console.log("otpExpiration", otpExpiration);
         const opt = await User.updateOne(
             { _id: user._id },
             { otp: hashedOtp, otpExpiration }
         );
-        console.log("opt",opt);
+        console.log("opt", opt);
         await sendOTPEmail(email, otp);
         return res.json({ message: "OTP has been sent to your email" });
     } catch (error) {
@@ -205,7 +219,10 @@ const resetPassword = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: "Account not found" });
         }
-        user.password = newPassword;
+
+        // Hash the new password before saving
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
 
         await user.save();
         return res.json({ message: "Password changed successfully!" });
@@ -235,7 +252,7 @@ const refreshToken = async (req, res, next) => {
             return res.status(403).json({ message: "Invalid refresh token" });
         }
 
-        const decoded = verifyToken(refreshToken);
+        const decoded = verifyRefreshToken(refreshToken);
         if (!decoded) {
             return res
                 .status(403)
@@ -283,7 +300,11 @@ const changePassword = async (req, res, next) => {
                     message: "New password cannot be the same as the old password",
                 });
         }
-        user.password = newPassword;
+
+        // Hash the new password before saving
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+
         await user.save();
         return res.json({ message: "Password changed successfully" });
     } catch (error) {
@@ -296,7 +317,7 @@ const changePassword = async (req, res, next) => {
 module.exports = {
     registerAccount,
     loginAccount,
-   // getUserProfile,
+    // getUserProfile,
     logOutAccount,
     refreshToken,
     forgotPassword,
