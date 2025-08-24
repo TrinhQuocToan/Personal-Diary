@@ -291,13 +291,13 @@ const AdminDashboard = () => {
         return (
             <div className="min-h-screen bg-gray-100 flex items-center justify-center">
                 <div className="text-center">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-                    <p className="text-gray-600 mb-4">Please login to access admin dashboard</p>
+                    <h1 className="text-2xl font-bold text-gray-900 mb-4">Truy cập bị từ chối</h1>
+                    <p className="text-gray-600 mb-4">Vui lòng đăng nhập để truy cập trang quản lý</p>
                     <button
                         onClick={() => navigate("/login")}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                     >
-                        Go to Login
+                        Đăng nhập
                     </button>
                 </div>
             </div>
@@ -310,13 +310,13 @@ const AdminDashboard = () => {
             return (
                 <div className="min-h-screen bg-gray-100 flex items-center justify-center">
                     <div className="text-center">
-                        <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-                        <p className="text-gray-600 mb-4">Only admin users can access this page</p>
+                        <h1 className="text-2xl font-bold text-gray-900 mb-4">Truy cập bị từ chối</h1>
+                        <p className="text-gray-600 mb-4">Chỉ có người dùng admin mới có thể truy cập trang này</p>
                         <button
                             onClick={() => navigate("/")}
                             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                         >
-                            Go to Home
+                            Về trang chủ
                         </button>
                     </div>
                 </div>
@@ -327,13 +327,13 @@ const AdminDashboard = () => {
         return (
             <div className="min-h-screen bg-gray-100 flex items-center justify-center">
                 <div className="text-center">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-                    <p className="text-gray-600 mb-4">Invalid authentication token</p>
+                    <h1 className="text-2xl font-bold text-gray-900 mb-4">Truy cập bị từ chối</h1>
+                    <p className="text-gray-600 mb-4">Mã xác thực không hợp lệ</p>
                     <button
                         onClick={() => navigate("/login")}
                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                     >
-                        Go to Login
+                        Đăng nhập
                     </button>
                 </div>
             </div>
@@ -341,26 +341,50 @@ const AdminDashboard = () => {
     }
 
     if (loading) {
-        return <div className="text-center mt-8">Loading...</div>;
+        return <div className="text-center mt-8">Đang tải...</div>;
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 p-6">
-            <div className="max-w-7xl mx-auto">
-                <div className="flex justify-between items-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-                    <button
-                        onClick={() => {
-                            localStorage.removeItem("accessToken");
-                            localStorage.removeItem("refreshToken");
-                            navigate("/login");
-                        }}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                    >
-                        Logout
-                    </button>
+        <div className="min-h-screen bg-gray-100">
+            {/* Admin Header */}
+            <div className="bg-white shadow-sm border-b">
+                <div className="max-w-7xl mx-auto px-6 py-4">
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center space-x-4">
+                            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+                                <p className="text-sm text-gray-500">Quản lý hệ thống Personal Diary</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                            <button
+                                onClick={() => navigate("/")}
+                                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                            >
+                                Về trang chủ
+                            </button>
+                            <button
+                                onClick={() => {
+                                    localStorage.removeItem("accessToken");
+                                    localStorage.removeItem("refreshToken");
+                                    navigate("/login");
+                                }}
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                            >
+                                Đăng xuất
+                            </button>
+                        </div>
+                    </div>
                 </div>
+            </div>
 
+            {/* Main Content */}
+            <div className="max-w-7xl mx-auto p-6">
                 {/* Navigation Tabs */}
                 <div className="flex space-x-4 mb-6">
                     <button
@@ -373,7 +397,7 @@ const AdminDashboard = () => {
                             : 'bg-white text-gray-700 hover:bg-gray-50'
                             }`}
                     >
-                        Dashboard
+                        Bảng điều khiển
                     </button>
                     <button
                         onClick={() => {
@@ -385,7 +409,7 @@ const AdminDashboard = () => {
                             : 'bg-white text-gray-700 hover:bg-gray-50'
                             }`}
                     >
-                        Users Management
+                        Quản lý người dùng
                     </button>
                     <button
                         onClick={() => {
@@ -397,7 +421,7 @@ const AdminDashboard = () => {
                             : 'bg-white text-gray-700 hover:bg-gray-50'
                             }`}
                     >
-                        Posts Management
+                        Quản lý bài viết
                     </button>
                     <button
                         onClick={() => {
@@ -410,7 +434,7 @@ const AdminDashboard = () => {
                             : 'bg-white text-gray-700 hover:bg-gray-50'
                             }`}
                     >
-                        Reports Management
+                        Quản lý báo cáo
                     </button>
                 </div>
 
@@ -418,27 +442,27 @@ const AdminDashboard = () => {
                 {activeTab === 'dashboard' && stats && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                         <div className="bg-white p-6 rounded-lg shadow">
-                            <h3 className="text-lg font-semibold text-gray-700">Total Users (Excluding Admin)</h3>
+                            <h3 className="text-lg font-semibold text-gray-700">Tổng số người dùng</h3>
                             <p className="text-3xl font-bold text-blue-600">{users.filter(user => user.role !== 'admin').length}</p>
                         </div>
                         <div className="bg-white p-6 rounded-lg shadow">
-                            <h3 className="text-lg font-semibold text-gray-700">Total Posts</h3>
+                            <h3 className="text-lg font-semibold text-gray-700">Tổng số bài viết</h3>
                             <p className="text-3xl font-bold text-green-600">{stats.overview.totalPosts}</p>
                         </div>
                         <div className="bg-white p-6 rounded-lg shadow">
-                            <h3 className="text-lg font-semibold text-gray-700">Public Posts</h3>
+                            <h3 className="text-lg font-semibold text-gray-700">Bài viết công khai</h3>
                             <p className="text-3xl font-bold text-purple-600">{stats.overview.publicPosts}</p>
                         </div>
                         <div className="bg-white p-6 rounded-lg shadow">
-                            <h3 className="text-lg font-semibold text-gray-700">Recent Posts (7 days)</h3>
+                            <h3 className="text-lg font-semibold text-gray-700">Bài viết gần đây (7 ngày)</h3>
                             <p className="text-3xl font-bold text-orange-600">{stats.overview.recentPosts}</p>
                         </div>
                         <div className="bg-white p-6 rounded-lg shadow">
-                            <h3 className="text-lg font-semibold text-gray-700">Pending Reports</h3>
+                            <h3 className="text-lg font-semibold text-gray-700">Báo cáo chờ xử lý</h3>
                             <p className="text-3xl font-bold text-red-600">{stats.overview.pendingReports || 0}</p>
                         </div>
                         <div className="bg-white p-6 rounded-lg shadow">
-                            <h3 className="text-lg font-semibold text-gray-700">User Distribution</h3>
+                            <h3 className="text-lg font-semibold text-gray-700">Phân bố người dùng</h3>
                             <div className="space-y-2">
                                 {stats.userStats.filter(stat => stat._id !== 'admin').map((stat) => (
                                     <div key={stat._id} className="flex justify-between">
@@ -455,11 +479,11 @@ const AdminDashboard = () => {
                 {activeTab === 'users' && (
                     <div className="bg-white rounded-lg shadow">
                         <div className="p-6 border-b">
-                            <h2 className="text-xl font-semibold text-gray-900">Users Management</h2>
+                            <h2 className="text-xl font-semibold text-gray-900">Quản lý người dùng</h2>
                             <div className="mt-4 flex space-x-4">
                                 <input
                                     type="text"
-                                    placeholder="Search users..."
+                                    placeholder="Tìm kiếm người dùng..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="px-3 py-2 border rounded-lg"
@@ -469,16 +493,16 @@ const AdminDashboard = () => {
                                     onChange={(e) => setSelectedRole(e.target.value)}
                                     className="px-3 py-2 border rounded-lg"
                                 >
-                                    <option value="">All Roles</option>
-                                    <option value="user">User</option>
+                                    <option value="">Tất cả vai trò</option>
+                                    <option value="user">Người dùng</option>
                                     <option value="moderator">Moderator</option>
-                                    <option value="admin" disabled>Admin (Hidden from management)</option>
+                                    <option value="admin" disabled>Admin (Ẩn khỏi quản lý)</option>
                                 </select>
                                 <button
                                     onClick={fetchUsers}
                                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                                 >
-                                    Search
+                                    Tìm kiếm
                                 </button>
                             </div>
                         </div>
@@ -487,16 +511,16 @@ const AdminDashboard = () => {
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            User
+                                            Người dùng
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Role
+                                            Vai trò
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Status
+                                            Trạng thái
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Actions
+                                            Hành động
                                         </th>
                                     </tr>
                                 </thead>
@@ -537,7 +561,7 @@ const AdminDashboard = () => {
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.isDeleted ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
                                                     }`}>
-                                                    {user.isDeleted ? 'Deleted' : 'Active'}
+                                                    {user.isDeleted ? 'Đã xóa' : 'Hoạt động'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -550,7 +574,7 @@ const AdminDashboard = () => {
                                                             }}
                                                             className="text-green-600 hover:text-green-900"
                                                         >
-                                                            Restore
+                                                            Khôi phục
                                                         </button>
                                                     ) : (
                                                         <>
@@ -561,7 +585,7 @@ const AdminDashboard = () => {
                                                                 }}
                                                                 className="text-blue-600 hover:text-blue-900"
                                                             >
-                                                                Change Role
+                                                                Thay đổi vai trò
                                                             </button>
                                                             <button
                                                                 onClick={(e) => {
@@ -570,7 +594,7 @@ const AdminDashboard = () => {
                                                                 }}
                                                                 className="text-red-600 hover:text-red-900"
                                                             >
-                                                                Delete
+                                                                Xóa
                                                             </button>
                                                         </>
                                                     )}
@@ -588,11 +612,11 @@ const AdminDashboard = () => {
                 {activeTab === 'posts' && (
                     <div className="bg-white rounded-lg shadow">
                         <div className="p-6 border-b">
-                            <h2 className="text-xl font-semibold text-gray-900">Posts Management</h2>
+                            <h2 className="text-xl font-semibold text-gray-900">Quản lý bài viết</h2>
                             <div className="mt-4 flex space-x-4">
                                 <input
                                     type="text"
-                                    placeholder="Search posts..."
+                                    placeholder="Tìm kiết bài viết..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="px-3 py-2 border rounded-lg"
@@ -601,7 +625,7 @@ const AdminDashboard = () => {
                                     onClick={fetchPosts}
                                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                                 >
-                                    Search
+                                    Tìm kiếm
                                 </button>
                             </div>
                         </div>
@@ -610,16 +634,16 @@ const AdminDashboard = () => {
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Post
+                                            Bài viết
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Author
+                                            Tác giả
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Status
+                                            Trạng thái
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Actions
+                                            Hành động
                                         </th>
                                     </tr>
                                 </thead>
@@ -651,7 +675,7 @@ const AdminDashboard = () => {
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${post.isDeleted ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
                                                     }`}>
-                                                    {post.isDeleted ? 'Deleted' : 'Active'}
+                                                    {post.isDeleted ? 'Đã xóa' : 'Hoạt động'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -664,7 +688,7 @@ const AdminDashboard = () => {
                                                             }}
                                                             className="text-green-600 hover:text-green-900"
                                                         >
-                                                            Restore
+                                                            Khôi phục
                                                         </button>
                                                     ) : (
                                                         <button
@@ -674,7 +698,7 @@ const AdminDashboard = () => {
                                                             }}
                                                             className="text-red-600 hover:text-red-900"
                                                         >
-                                                            Delete
+                                                            Xóa
                                                         </button>
                                                     )}
                                                 </div>
@@ -691,24 +715,24 @@ const AdminDashboard = () => {
                 {activeTab === 'reports' && (
                     <div className="bg-white rounded-lg shadow">
                         <div className="p-6 border-b">
-                            <h2 className="text-xl font-semibold text-gray-900">Reports Management</h2>
+                            <h2 className="text-xl font-semibold text-gray-900">Quản lý báo cáo</h2>
                             <div className="mt-4 flex space-x-4">
                                 <select
                                     value={selectedStatus}
                                     onChange={(e) => setSelectedStatus(e.target.value)}
                                     className="px-3 py-2 border rounded-lg"
                                 >
-                                    <option value="">All Status</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="reviewed">Reviewed</option>
-                                    <option value="resolved">Resolved</option>
-                                    <option value="dismissed">Dismissed</option>
+                                    <option value="">Tất cả trạng thái</option>
+                                    <option value="pending">Chờ xử lý</option>
+                                    <option value="reviewed">Đã xem</option>
+                                    <option value="resolved">Đã xử lý</option>
+                                    <option value="dismissed">Đã hủy</option>
                                 </select>
                                 <button
                                     onClick={fetchReports}
                                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                                 >
-                                    Filter
+                                    Lọc
                                 </button>
                             </div>
                         </div>
@@ -717,19 +741,19 @@ const AdminDashboard = () => {
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Reporter
+                                            Người báo cáo
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Item Type
+                                            Loại báo cáo
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Reason
+                                            Lý do
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Status
+                                            Trạng thái
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Actions
+                                            Hành động
                                         </th>
                                     </tr>
                                 </thead>
@@ -751,7 +775,7 @@ const AdminDashboard = () => {
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${report.itemType === 'post' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
                                                     }`}>
-                                                    {report.itemType === 'post' ? 'Post' : 'Comment'}
+                                                    {report.itemType === 'post' ? 'Bài viết' : 'Bình luận'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
@@ -787,7 +811,7 @@ const AdminDashboard = () => {
                                                                 }}
                                                                 className="text-blue-600 hover:text-blue-900"
                                                             >
-                                                                Update Status
+                                                                Cập nhật trạng thái
                                                             </button>
                                                         </>
                                                     )}
@@ -798,7 +822,7 @@ const AdminDashboard = () => {
                                                         }}
                                                         className="text-red-600 hover:text-red-900"
                                                     >
-                                                        Delete Item
+                                                        Xóa báo cáo
                                                     </button>
                                                 </div>
                                             </td>
@@ -991,9 +1015,9 @@ const AdminDashboard = () => {
                         <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="text-xl font-semibold text-gray-900">
-                                    {modalType === 'user' && 'User Details'}
-                                    {modalType === 'post' && 'Post Details'}
-                                    {modalType === 'report' && 'Report Details'}
+                                    {modalType === 'user' && 'Chi tiết người dùng'}
+                                    {modalType === 'post' && 'Chi tiết bài viết'}
+                                    {modalType === 'report' && 'Chi tiết báo cáo'}
                                 </h3>
                                 <button
                                     onClick={closeModal}
@@ -1007,11 +1031,11 @@ const AdminDashboard = () => {
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                                            <label className="block text-sm font-medium text-gray-700">Họ và tên</label>
                                             <p className="text-sm text-gray-900">{selectedItem.fullName}</p>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Username</label>
+                                            <label className="block text-sm font-medium text-gray-700">Tên người dùng</label>
                                             <p className="text-sm text-gray-900">{selectedItem.username}</p>
                                         </div>
                                         <div>
@@ -1019,7 +1043,7 @@ const AdminDashboard = () => {
                                             <p className="text-sm text-gray-900">{selectedItem.email}</p>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Role</label>
+                                            <label className="block text-sm font-medium text-gray-700">Vai trò</label>
                                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${selectedItem.role === 'admin' ? 'bg-red-100 text-red-800' :
                                                 selectedItem.role === 'moderator' ? 'bg-blue-100 text-blue-800' :
                                                     'bg-green-100 text-green-800'
@@ -1029,21 +1053,21 @@ const AdminDashboard = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Status</label>
+                                        <label className="block text-sm font-medium text-gray-700">Trạng thái</label>
                                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${selectedItem.isDeleted ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
                                             }`}>
                                             {selectedItem.isDeleted ? 'Deleted' : 'Active'}
                                         </span>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Created At</label>
+                                        <label className="block text-sm font-medium text-gray-700">Ngày tạo</label>
                                         <p className="text-sm text-gray-900">
                                             {new Date(selectedItem.createdAt).toLocaleString('vi-VN')}
                                         </p>
                                     </div>
                                     {selectedItem.isDeleted && (
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Deleted At</label>
+                                            <label className="block text-sm font-medium text-gray-700">Ngày xóa</label>
                                             <p className="text-sm text-gray-900">
                                                 {new Date(selectedItem.deletedAt).toLocaleString('vi-VN')}
                                             </p>
@@ -1055,30 +1079,30 @@ const AdminDashboard = () => {
                             {modalType === 'post' && (
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Title</label>
+                                        <label className="block text-sm font-medium text-gray-700">Tiêu đề</label>
                                         <p className="text-sm text-gray-900 font-semibold">{selectedItem.title}</p>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Content</label>
+                                        <label className="block text-sm font-medium text-gray-700">Nội dung</label>
                                         <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg">
                                             {selectedItem.content}
                                         </p>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Author</label>
+                                            <label className="block text-sm font-medium text-gray-700">Tác giả</label>
                                             <p className="text-sm text-gray-900">{selectedItem.userId?.fullName || 'Unknown'}</p>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Mood</label>
+                                            <label className="block text-sm font-medium text-gray-700">Tâm trạng</label>
                                             <p className="text-sm text-gray-900 capitalize">{selectedItem.mood}</p>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Weather</label>
+                                            <label className="block text-sm font-medium text-gray-700">Thời tiết</label>
                                             <p className="text-sm text-gray-900 capitalize">{selectedItem.weather}</p>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Public</label>
+                                            <label className="block text-sm font-medium text-gray-700">Công khai</label>
                                             <span className={`px-2 py-1 text-xs font-semibold rounded-full ${selectedItem.isPublic ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                                                 }`}>
                                                 {selectedItem.isPublic ? 'Yes' : 'No'}
@@ -1098,21 +1122,21 @@ const AdminDashboard = () => {
                                         </div>
                                     )}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Status</label>
+                                        <label className="block text-sm font-medium text-gray-700">Trạng thái</label>
                                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${selectedItem.isDeleted ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
                                             }`}>
                                             {selectedItem.isDeleted ? 'Deleted' : 'Active'}
                                         </span>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Created At</label>
+                                        <label className="block text-sm font-medium text-gray-700">Ngày tạo</label>
                                         <p className="text-sm text-gray-900">
                                             {new Date(selectedItem.createdAt).toLocaleString('vi-VN')}
                                         </p>
                                     </div>
                                     {selectedItem.isDeleted && (
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Deleted At</label>
+                                            <label className="block text-sm font-medium text-gray-700">Ngày xóa</label>
                                             <p className="text-sm text-gray-900">
                                                 {new Date(selectedItem.deletedAt).toLocaleString('vi-VN')}
                                             </p>
@@ -1125,23 +1149,23 @@ const AdminDashboard = () => {
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Reporter</label>
+                                            <label className="block text-sm font-medium text-gray-700">Người báo cáo</label>
                                             <p className="text-sm text-gray-900">{selectedItem.reporter?.fullName || 'Unknown'}</p>
                                             <p className="text-xs text-gray-500">{selectedItem.reporter?.email || 'Unknown'}</p>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Item Type</label>
+                                            <label className="block text-sm font-medium text-gray-700">Loại báo cáo</label>
                                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${selectedItem.itemType === 'post' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
                                                 }`}>
                                                 {selectedItem.itemType === 'post' ? 'Post' : 'Comment'}
                                             </span>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Reason</label>
+                                            <label className="block text-sm font-medium text-gray-700">Lý do</label>
                                             <p className="text-sm text-gray-900 capitalize">{selectedItem.reason.replace('_', ' ')}</p>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Status</label>
+                                            <label className="block text-sm font-medium text-gray-700">Trạng thái</label>
                                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${selectedItem.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                                                 selectedItem.status === 'reviewed' ? 'bg-blue-100 text-blue-800' :
                                                     selectedItem.status === 'resolved' ? 'bg-green-100 text-green-800' :
@@ -1153,7 +1177,7 @@ const AdminDashboard = () => {
                                     </div>
                                     {selectedItem.description && (
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Description</label>
+                                            <label className="block text-sm font-medium text-gray-700">Mô tả</label>
                                             <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg">
                                                 {selectedItem.description}
                                             </p>
@@ -1161,21 +1185,21 @@ const AdminDashboard = () => {
                                     )}
                                     {selectedItem.adminNotes && (
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Admin Notes</label>
+                                            <label className="block text-sm font-medium text-gray-700">Ghi chú của admin</label>
                                             <p className="text-sm text-gray-900 bg-blue-50 p-3 rounded-lg">
                                                 {selectedItem.adminNotes}
                                             </p>
                                         </div>
                                     )}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Reported At</label>
+                                        <label className="block text-sm font-medium text-gray-700">Ngày báo cáo</label>
                                         <p className="text-sm text-gray-900">
                                             {new Date(selectedItem.createdAt).toLocaleString('vi-VN')}
                                         </p>
                                     </div>
                                     {selectedItem.resolvedBy && (
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Resolved By</label>
+                                            <label className="block text-sm font-medium text-gray-700">Người xử lý</label>
                                             <p className="text-sm text-gray-900">{selectedItem.resolvedBy?.fullName || 'Unknown'}</p>
                                             <p className="text-xs text-gray-500">
                                                 {new Date(selectedItem.resolvedAt).toLocaleString('vi-VN')}
@@ -1190,7 +1214,7 @@ const AdminDashboard = () => {
                                     onClick={closeModal}
                                     className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
                                 >
-                                    Close
+                                    Đóng
                                 </button>
                             </div>
                         </div>

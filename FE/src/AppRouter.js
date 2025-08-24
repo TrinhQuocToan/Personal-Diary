@@ -74,8 +74,17 @@ const AppRouter = () => {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/verify-otp" element={<VerifyOTP />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/admin" element={<AdminDashboard />} />
           {/* Các route được bảo vệ, phải đăng nhập mới vào được */}
+          <Route
+            path="/admin" // Route cho admin dashboard
+            element={
+              <PrivateRoute>
+                <div className="dark:bg-main-dark-bg bg-main-bg min-h-screen w-full">
+                  <AdminDashboard />
+                </div>
+              </PrivateRoute>
+            }
+          />
           <Route
             path="/*" // Các route phụ của ứng dụng
             element={
