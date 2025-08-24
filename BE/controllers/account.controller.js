@@ -86,18 +86,9 @@ const registerAccount = async (req, res) => {
 const loginAccount = async (req, res) => {
     try {
         const { username, password } = req.body;
-        const usernameRegex = /^[a-zA-Z0-9_]{4,}$/;
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
         if (!username || !password) {
             return res.status(400).json({ message: "Please enter complete information!" });
-        }
-
-        if (!usernameRegex.test(username)) {
-            return res.status(400).json({ message: "Invalid username format!" });
-        }
-        if (!passwordRegex.test(password)) {
-            return res.status(400).json({ message: "Invalid password format!" });
         }
 
         const user = await User.findOne({ username, isDeleted: { $ne: true } });

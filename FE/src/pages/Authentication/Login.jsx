@@ -21,17 +21,12 @@ function Login() {
 
   const validateForm = () => {
     const newErrors = {};
-    const usernameRegex = /^[a-zA-Z0-9_]{4,}$/;
-    const passwordRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
-    if (!username || !usernameRegex.test(username)) {
-      newErrors.username =
-        "Username must be at least 4 characters and contain only letters, numbers, or underscores.";
+    if (!username.trim()) {
+      newErrors.username = "Username is required";
     }
-    if (!password || !passwordRegex.test(password)) {
-      newErrors.password =
-        "Password must be at least 8 characters, including one uppercase, one lowercase, one number, and one special character.";
+    if (!password.trim()) {
+      newErrors.password = "Password is required";
     }
 
     setErrors(newErrors);
@@ -41,10 +36,13 @@ function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setMessage(null);
+    console.log("Form submitted, validating...");
 
     if (!validateForm()) {
+      console.log("Form validation failed");
       return;
     }
+    console.log("Form validation passed, proceeding with login...");
 
     try {
       const response = await axiosInstance.post("/api/login", {
@@ -67,12 +65,14 @@ function Login() {
         navigate("/");
       }
     } catch (err) {
+      console.log("Login error caught:", err);
       setMessage({
         type: "error",
         text:
           err.response?.data?.message ||
           "Login failed. Please check your credentials.",
       });
+      return; // Thêm return để dừng thực thi
     }
   };
 
