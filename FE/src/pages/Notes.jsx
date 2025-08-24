@@ -13,6 +13,13 @@ const PersonalDiary = () => {
   const [comments, setComments] = useState({}); // Object chứa comments của từng bài
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedDiary, setSelectedDiary] = useState(null);
+  const [showReportForm, setShowReportForm] = useState(false);
+  const [reportData, setReportData] = useState({
+    reportedItem: '',
+    itemType: '',
+    reason: '',
+    description: ''
+  });
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -221,6 +228,42 @@ const PersonalDiary = () => {
     }
   };
 
+  const handleReport = (itemId, itemType) => {
+    setReportData({
+      reportedItem: itemId,
+      itemType: itemType,
+      reason: '',
+      description: ''
+    });
+    setShowReportForm(true);
+  };
+
+  const handleSubmitReport = async (e) => {
+    e.preventDefault();
+    if (!reportData.reason) return;
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      await axios.post('http://localhost:9999/api/reports',
+        reportData,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setShowReportForm(false);
+      setReportData({
+        reportedItem: '',
+        itemType: '',
+        reason: '',
+        description: ''
+      });
+
+      alert('Báo cáo đã được gửi thành công!');
+    } catch (error) {
+      console.error('Error creating report:', error);
+      alert('Có lỗi xảy ra khi gửi báo cáo');
+    }
+  };
+
   if (loading) {
     return (
       <div className="m-2 md:m-10 mt-24 p-2 md:p-10 bg-white rounded-3xl">
@@ -242,8 +285,8 @@ const PersonalDiary = () => {
             <button
               onClick={() => setActiveTab('all')}
               className={`px-4 py-2 rounded-md transition-colors ${activeTab === 'all'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-800'
                 }`}
             >
               🌍 Feed chung
@@ -251,8 +294,8 @@ const PersonalDiary = () => {
             <button
               onClick={() => setActiveTab('my')}
               className={`px-4 py-2 rounded-md transition-colors ${activeTab === 'my'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-800'
                 }`}
             >
               📖 Nhật ký của tôi
@@ -394,6 +437,74 @@ const PersonalDiary = () => {
           </div>
         )}
 
+        {/* Form báo cáo */}
+        {showReportForm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-xl font-semibold mb-4">
+                Báo cáo {reportData.itemType === 'post' ? 'bài viết' : 'bình luận'}
+              </h3>
+
+              <form onSubmit={handleSubmitReport} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Lý do báo cáo</label>
+                  <select
+                    value={reportData.reason}
+                    onChange={(e) => setReportData({ ...reportData, reason: e.target.value })}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Chọn lý do báo cáo</option>
+                    <option value="spam">Spam</option>
+                    <option value="inappropriate">Nội dung không phù hợp</option>
+                    <option value="harassment">Quấy rối</option>
+                    <option value="violence">Bạo lực</option>
+                    <option value="copyright">Vi phạm bản quyền</option>
+                    <option value="fake_news">Tin giả</option>
+                    <option value="other">Khác</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Mô tả chi tiết (tùy chọn)</label>
+                  <textarea
+                    value={reportData.description}
+                    onChange={(e) => setReportData({ ...reportData, description: e.target.value })}
+                    rows="3"
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Mô tả chi tiết về vấn đề..."
+                    maxLength="500"
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowReportForm(false);
+                      setReportData({
+                        reportedItem: '',
+                        itemType: '',
+                        reason: '',
+                        description: ''
+                      });
+                    }}
+                    className="px-4 py-2 text-gray-600 border rounded-lg hover:bg-gray-50"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                  >
+                    Gửi báo cáo
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
         {/* Danh sách nhật ký */}
         <div className="space-y-4">
           {diaries.length === 0 ? (
@@ -490,8 +601,8 @@ const PersonalDiary = () => {
                         <button
                           onClick={() => handleLike(diary._id)}
                           className={`flex items-center space-x-1 px-3 py-1 rounded-full transition-colors ${diary.isLiked
-                              ? 'bg-red-100 text-red-700 border border-red-200'
-                              : 'bg-red-50 hover:bg-red-100 text-red-600'
+                            ? 'bg-red-100 text-red-700 border border-red-200'
+                            : 'bg-red-50 hover:bg-red-100 text-red-600'
                             }`}
                         >
                           <span>{diary.isLiked ? '❤️' : '🤍'}</span>
@@ -505,6 +616,15 @@ const PersonalDiary = () => {
                         <span>💬</span>
                         <span>Bình luận</span>
                       </button>
+                      {activeTab === 'all' && !isOwner && (
+                        <button
+                          onClick={() => handleReport(diary._id, 'post')}
+                          className="flex items-center space-x-1 px-3 py-1 rounded-full bg-orange-50 hover:bg-orange-100 text-orange-600 transition-colors"
+                        >
+                          <span>🚨</span>
+                          <span>Báo cáo</span>
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -538,6 +658,14 @@ const PersonalDiary = () => {
                                     </span>
                                   </div>
                                   <p className="text-gray-700 text-sm">{comment.content}</p>
+                                  {activeTab === 'all' && comment.userId?._id !== diary.userId?._id && (
+                                    <button
+                                      onClick={() => handleReport(comment._id, 'comment')}
+                                      className="mt-2 text-xs text-orange-600 hover:text-orange-800 transition-colors"
+                                    >
+                                      🚨 Báo cáo
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             </div>

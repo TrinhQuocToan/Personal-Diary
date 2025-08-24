@@ -27,12 +27,20 @@ function Login() {
         password,
       });
 
-      // localStorage.setItem('accessToken', response.data.accessToken);
-      // localStorage.setItem('refreshToken', response.data.refreshToken);
-
       setMessage({ type: "success", text: "Login successful! Welcome back." });
       login(response.data.accessToken, response.data.refreshToken);
-      navigate("/");
+
+      try {
+        const tokenPayload = JSON.parse(atob(response.data.accessToken.split('.')[1]));
+        if (tokenPayload.role === 'admin') {
+          navigate("/admin");
+        } else {
+          navigate("/");
+        }
+      } catch (error) {
+        console.error('Error decoding token:', error);
+        navigate("/");
+      }
     } catch (err) {
       setMessage({
         type: "error",
@@ -55,11 +63,10 @@ function Login() {
       <div className="w-1/2 bg-gray-100 flex flex-col justify-center items-center px-10 relative">
         {message && (
           <div
-            className={`absolute top-6 px-6 py-3 rounded shadow-md transition-all duration-300 ${
-              message.type === "success"
-                ? "bg-green-100 text-green-800 border border-green-300"
-                : "bg-red-100 text-red-800 border border-red-300"
-            }`}
+            className={`absolute top-6 px-6 py-3 rounded shadow-md transition-all duration-300 ${message.type === "success"
+              ? "bg-green-100 text-green-800 border border-green-300"
+              : "bg-red-100 text-red-800 border border-red-300"
+              }`}
           >
             {message.text}
           </div>

@@ -49,6 +49,15 @@ const userSchema = new mongoose.Schema(
     otp: { type: String, default: null },
     otpExpiration: { type: Date, default: null },
     role: { type: String, default: "user" },
+    // Soft delete
+    isDeleted: {
+      type: Boolean,
+      default: false
+    },
+    deletedAt: {
+      type: Date,
+      default: null
+    },
   },
   { timestamps: true, versionKey: false }
 );

@@ -79,7 +79,7 @@ const loginAccount = async (req, res, next) => {
                 .json({ message: "Please enter complete information !" });
         }
 
-        const user = await User.findOne({ username });
+        const user = await User.findOne({ username, isDeleted: { $ne: true } });
         console.log("user", user);
         if (!user) {
             return res.status(404).json({
@@ -88,7 +88,7 @@ const loginAccount = async (req, res, next) => {
         }
         const password1 = await bcrypt.compare(password, user.password);
         console.log("password1", password, user.password, password1);
-        if (!user || !password1) {
+        if (!password1) {
             return res
                 .status(401)
                 .json({ message: "Username or password is incorrect!!" });

@@ -9,6 +9,8 @@ const calendarRoutes = require("./routes/calendar.routes");
 const account = require("./routes/account.route");
 const kanbanRoutes = require("./routes/kanban.route");
 const diaryRoutes = require("./routes/note.routes");
+const adminRoutes = require("./routes/admin.routes");
+const reportRoutes = require("./routes/report.routes");
 
 const app = express();
 app.use(cors());
@@ -24,6 +26,8 @@ app.use("/api/user", userRouter);
 app.use("/api", calendarRoutes);
 app.use("/api", kanbanRoutes);
 app.use("/api", diaryRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/reports", reportRoutes);
 
 // Connect to database and start server
 const startServer = async () => {

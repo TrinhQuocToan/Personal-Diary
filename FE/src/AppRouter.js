@@ -40,6 +40,7 @@ import {
   UserProfilePage,
   Notes,
 } from "./pages";
+import AdminDashboard from "./pages/AdminDashboard";
 
 import "./App.css";
 import { useStateContext } from "./contexts/ContextProvider";
@@ -89,6 +90,7 @@ const AppRouter = () => {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/verify-otp" element={<VerifyOTP />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/admin" element={<AdminDashboard />} />
           {/* Các route được bảo vệ, phải đăng nhập mới vào được */}
           <Route
             path="/*" // Các route phụ của ứng dụng
