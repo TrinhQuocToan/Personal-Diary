@@ -5,7 +5,6 @@ import { MdOutlineCancel } from "react-icons/md";
 import { FiUsers, FiFileText, FiBarChart2 } from "react-icons/fi";
 import { TooltipComponent } from "@syncfusion/ej2-react-popups";
 
-import { links } from "../data/dummy";
 import { useStateContext } from "../contexts/ContextProvider";
 import { AuthContext } from "../AuthContext";
 
@@ -64,29 +63,38 @@ const Sidebar = () => {
             </TooltipComponent>
           </div>
           <div className="mt-10 ">
-            {links.map((item) => (
-              <div key={item.title}>
-                <p className="text-gray-400 dark:text-gray-400 m-3 mt-4 uppercase">
-                  {item.title}
-                </p>
-                {item.links.map((link) => (
-                  <NavLink
-                    to={`/${link.name}`}
-                    key={link.name}
-                    onClick={handleCloseSideBar}
-                    style={({ isActive }) => ({
-                      backgroundColor: isActive ? currentColor : "",
-                    })}
-                    className={({ isActive }) =>
-                      isActive ? activeLink : normalLink
-                    }
-                  >
-                    {link.icon}
-                    <span className="capitalize ">{link.name}</span>
-                  </NavLink>
-                ))}
-              </div>
-            ))}
+            {/* Main Navigation */}
+            <div>
+              <p className="text-gray-400 dark:text-gray-400 m-3 mt-4 uppercase">
+                Main
+              </p>
+              <NavLink
+                to="/"
+                onClick={handleCloseSideBar}
+                style={({ isActive }) => ({
+                  backgroundColor: isActive ? currentColor : "",
+                })}
+                className={({ isActive }) =>
+                  isActive ? activeLink : normalLink
+                }
+              >
+                <FiFileText />
+                <span className="capitalize">Notes</span>
+              </NavLink>
+              <NavLink
+                to="/profile"
+                onClick={handleCloseSideBar}
+                style={({ isActive }) => ({
+                  backgroundColor: isActive ? currentColor : "",
+                })}
+                className={({ isActive }) =>
+                  isActive ? activeLink : normalLink
+                }
+              >
+                <FiUsers />
+                <span className="capitalize">Profile</span>
+              </NavLink>
+            </div>
 
             {/* Admin Section */}
             {userRole === 'admin' && (

@@ -1,8 +1,6 @@
 import React from "react";
 import { MdOutlineCancel } from "react-icons/md";
 
-import { Button } from ".";
-import { chatData } from "../data/dummy";
 import { useStateContext } from "../contexts/ContextProvider";
 
 const Notification = () => {
@@ -23,42 +21,34 @@ const Notification = () => {
             5 New
           </button>
         </div>
-        <Button
-          icon={<MdOutlineCancel />}
-          color="rgb(153, 171, 180)"
-          bgHoverColor="light-gray"
-          size="2xl"
-          borderRadius="50%"
-        />
+        <button
+          type="button"
+          onClick={() => { }}
+          className="text-2xl p-3 hover:drop-shadow-xl hover:bg-light-gray rounded-full"
+          style={{ color: "rgb(153, 171, 180)" }}
+        >
+          <MdOutlineCancel />
+        </button>
       </div>
       <div className="mt-5 ">
-        {chatData?.map((item, index) => (
-          <div
-            key={index}
-            className="flex items-center leading-8 gap-5 border-b-1 border-color p-3"
-          >
-            <img
-              className="rounded-full h-10 w-10"
-              src={item.image}
-              alt={item.message}
-            />
-            <div>
-              <p className="font-semibold dark:text-gray-200">{item.message}</p>
-              <p className="text-gray-500 text-sm dark:text-gray-400">
-                {" "}
-                {item.desc}{" "}
-              </p>
-            </div>
+        <div className="flex items-center leading-8 gap-5 border-b-1 border-color p-3">
+          <div className="rounded-full h-10 w-10 bg-blue-500 flex items-center justify-center">
+            <span className="text-white font-bold">N</span>
           </div>
-        ))}
+          <div>
+            <p className="font-semibold dark:text-gray-200">New notification</p>
+            <p className="text-gray-500 text-sm dark:text-gray-400">
+              You have a new message
+            </p>
+          </div>
+        </div>
         <div className="mt-5">
-          <Button
-            color="white"
-            bgColor={currentColor}
-            text="See all notifications"
-            borderRadius="10px"
-            width="full"
-          />
+          <button
+            className="w-full py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            onClick={() => { }}
+          >
+            See all notifications
+          </button>
         </div>
       </div>
     </div>

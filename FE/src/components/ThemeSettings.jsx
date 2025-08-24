@@ -3,7 +3,6 @@ import { MdOutlineCancel } from "react-icons/md";
 import { BsCheck } from "react-icons/bs";
 import { TooltipComponent } from "@syncfusion/ej2-react-popups";
 
-import { themeColors } from "../data/dummy";
 import { useStateContext } from "../contexts/ContextProvider";
 
 const ThemeSettings = () => {
@@ -61,7 +60,13 @@ const ThemeSettings = () => {
         <div className="p-4 border-t-1 border-color ml-4">
           <p className="font-semibold text-xl ">Theme Colors</p>
           <div className="flex gap-3">
-            {themeColors.map((item, index) => (
+            {[
+              { name: "Blue", color: "#03C9D7" },
+              { name: "Green", color: "#00C292" },
+              { name: "Purple", color: "#7352FF" },
+              { name: "Red", color: "#FF5C8E" },
+              { name: "Orange", color: "#FB9678" },
+            ].map((item, index) => (
               <TooltipComponent
                 key={index}
                 content={item.name}
@@ -78,9 +83,8 @@ const ThemeSettings = () => {
                     onClick={() => setColor(item.color)}
                   >
                     <BsCheck
-                      className={`ml-2 text-2xl text-white ${
-                        item.color === currentColor ? "block" : "hidden"
-                      }`}
+                      className={`ml-2 text-2xl text-white ${item.color === currentColor ? "block" : "hidden"
+                        }`}
                     />
                   </button>
                 </div>

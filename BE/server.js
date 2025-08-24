@@ -5,9 +5,7 @@ const cors = require("cors");
 const connectDb = require("./config/db");
 require("dotenv").config();
 const userRouter = require("./routes/user.routes");
-const calendarRoutes = require("./routes/calendar.routes");
 const account = require("./routes/account.route");
-const kanbanRoutes = require("./routes/kanban.route");
 const diaryRoutes = require("./routes/note.routes");
 const adminRoutes = require("./routes/admin.routes");
 const reportRoutes = require("./routes/report.routes");
@@ -23,8 +21,6 @@ app.use("/uploads", express.static("uploads"));
 // Initialize routes
 app.use("/api", account);
 app.use("/api/user", userRouter);
-app.use("/api", calendarRoutes);
-app.use("/api", kanbanRoutes);
 app.use("/api", diaryRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/reports", reportRoutes);
