@@ -1,46 +1,81 @@
-import React, { useState, useEffect } from 'react';
-import { Header } from '../components';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import { Header } from "../components";
+import axios from "axios";
 
 const PersonalDiary = () => {
   const [diaries, setDiaries] = useState([]);
+  const [filteredDiaries, setFilteredDiaries] = useState([]);
   const [editingDiary, setEditingDiary] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('all'); // 'all' hoặc 'my'
-  const [showCommentInput, setShowCommentInput] = useState(null); // ID của bài đang comment
-  const [commentText, setCommentText] = useState('');
-  const [showComments, setShowComments] = useState(null); // ID của bài đang xem comments
-  const [comments, setComments] = useState({}); // Object chứa comments của từng bài
+  const [activeTab, setActiveTab] = useState("all");
+  const [showCommentInput, setShowCommentInput] = useState(null);
+  const [commentText, setCommentText] = useState("");
+  const [showComments, setShowComments] = useState(null);
+  const [comments, setComments] = useState({});
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedDiary, setSelectedDiary] = useState(null);
   const [formData, setFormData] = useState({
-    title: '',
-    content: '',
-    mood: 'other',
-    weather: 'other',
+    title: "",
+    content: "",
+    mood: "other",
+    weather: "other",
     isPublic: false,
-    tags: '',
-    location: ''
+    tags: "",
+    location: "",
+  });
+
+  // Thêm state mới cho bộ lọc
+  const [showFilters, setShowFilters] = useState(false); // Mặc định ẩn bộ lọc
+
+  // State cho tìm kiếm và lọc
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filters, setFilters] = useState({
+    mood: "",
+    weather: "",
+    tag: "",
+    fromDate: "",
+    toDate: "",
+    location: "",
   });
 
   const moods = [
-    { value: 'happy', label: '😊 Vui vẻ', color: 'bg-yellow-100 text-yellow-800' },
-    { value: 'sad', label: '😢 Buồn', color: 'bg-blue-100 text-blue-800' },
-    { value: 'excited', label: '🤩 Hào hứng', color: 'bg-pink-100 text-pink-800' },
-    { value: 'angry', label: '😠 Tức giận', color: 'bg-red-100 text-red-800' },
-    { value: 'peaceful', label: '😌 Bình yên', color: 'bg-green-100 text-green-800' },
-    { value: 'anxious', label: '😰 Lo lắng', color: 'bg-orange-100 text-orange-800' },
-    { value: 'grateful', label: '🙏 Biết ơn', color: 'bg-purple-100 text-purple-800' },
-    { value: 'other', label: '😐 Khác', color: 'bg-gray-100 text-gray-800' }
+    {
+      value: "happy",
+      label: "😊 Vui vẻ",
+      color: "bg-yellow-100 text-yellow-800",
+    },
+    { value: "sad", label: "😢 Buồn", color: "bg-blue-100 text-blue-800" },
+    {
+      value: "excited",
+      label: "🤩 Hào hứng",
+      color: "bg-pink-100 text-pink-800",
+    },
+    { value: "angry", label: "😠 Tức giận", color: "bg-red-100 text-red-800" },
+    {
+      value: "peaceful",
+      label: "😌 Bình yên",
+      color: "bg-green-100 text-green-800",
+    },
+    {
+      value: "anxious",
+      label: "😰 Lo lắng",
+      color: "bg-orange-100 text-orange-800",
+    },
+    {
+      value: "grateful",
+      label: "🙏 Biết ơn",
+      color: "bg-purple-100 text-purple-800",
+    },
+    { value: "other", label: "😐 Khác", color: "bg-gray-100 text-gray-800" },
   ];
 
   const weathers = [
-    { value: 'sunny', label: '☀️ Nắng' },
-    { value: 'cloudy', label: '☁️ Nhiều mây' },
-    { value: 'rainy', label: '🌧️ Mưa' },
-    { value: 'snowy', label: '❄️ Tuyết' },
-    { value: 'windy', label: '💨 Gió' },
-    { value: 'other', label: '🌤️ Khác' }
+    { value: "sunny", label: "☀️ Nắng" },
+    { value: "cloudy", label: "☁️ Nhiều mây" },
+    { value: "rainy", label: "🌧️ Mưa" },
+    { value: "snowy", label: "❄️ Tuyết" },
+    { value: "windy", label: "💨 Gió" },
+    { value: "other", label: "🌤️ Khác" },
   ];
 
   useEffect(() => {
@@ -51,16 +86,65 @@ const PersonalDiary = () => {
     fetchDiaries(activeTab);
   }, [activeTab]);
 
+  // Effect mới để áp dụng lọc và tìm kiếm mỗi khi diaries, searchQuery hoặc filters thay đổi
+  useEffect(() => {
+    let result = [...diaries];
+
+    // Áp dụng tìm kiếm (tìm trong title, content, location, tags)
+    if (searchQuery.trim()) {
+      const lowerQuery = searchQuery.toLowerCase();
+      result = result.filter(
+        (diary) =>
+          diary.title.toLowerCase().includes(lowerQuery) ||
+          diary.content.toLowerCase().includes(lowerQuery) ||
+          (diary.location &&
+            diary.location.toLowerCase().includes(lowerQuery)) ||
+          diary.tags.some((tag) => tag.toLowerCase().includes(lowerQuery))
+      );
+    }
+
+    // Áp dụng lọc
+    if (filters.mood) {
+      result = result.filter((diary) => diary.mood === filters.mood);
+    }
+    if (filters.weather) {
+      result = result.filter((diary) => diary.weather === filters.weather);
+    }
+    if (filters.tag.trim()) {
+      const lowerTag = filters.tag.toLowerCase();
+      result = result.filter((diary) =>
+        diary.tags.some((tag) => tag.toLowerCase().includes(lowerTag))
+      );
+    }
+    if (filters.location.trim()) {
+      const lowerLocation = filters.location.toLowerCase();
+      result = result.filter(
+        (diary) =>
+          diary.location && diary.location.toLowerCase().includes(lowerLocation)
+      );
+    }
+    if (filters.fromDate) {
+      const from = new Date(filters.fromDate);
+      result = result.filter((diary) => new Date(diary.createdAt) >= from);
+    }
+    if (filters.toDate) {
+      const to = new Date(filters.toDate);
+      result = result.filter((diary) => new Date(diary.createdAt) <= to);
+    }
+
+    setFilteredDiaries(result);
+  }, [diaries, searchQuery, filters]);
+
   const fetchDiaries = async (tab = activeTab) => {
     try {
-      const token = localStorage.getItem('accessToken');
-      const endpoint = tab === 'my' ? '/api/my-diaries' : '/api/diaries';
+      const token = localStorage.getItem("accessToken");
+      const endpoint = tab === "my" ? "/api/my-diaries" : "/api/diaries";
       const response = await axios.get(`http://localhost:9999${endpoint}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       setDiaries(response.data.diaries);
     } catch (error) {
-      console.error('Error fetching diaries:', error);
+      console.error("Error fetching diaries:", error);
     } finally {
       setLoading(false);
     }
@@ -69,38 +153,45 @@ const PersonalDiary = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('accessToken');
-      const tagsArray = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+      const token = localStorage.getItem("accessToken");
+      const tagsArray = formData.tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag);
 
       const diaryData = {
         ...formData,
-        tags: tagsArray
+        tags: tagsArray,
       };
 
       if (editingDiary) {
-        await axios.put(`http://localhost:9999/api/diaries/${editingDiary._id}`, diaryData, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await axios.put(
+          `http://localhost:9999/api/diaries/${editingDiary._id}`,
+          diaryData,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
       } else {
-        await axios.post('http://localhost:9999/api/diaries', diaryData, {
-          headers: { Authorization: `Bearer ${token}` }
+        await axios.post("http://localhost:9999/api/diaries", diaryData, {
+          headers: { Authorization: `Bearer ${token}` },
         });
       }
 
       setShowCreateForm(false);
       setEditingDiary(null);
       setFormData({
-        title: '',
-        content: '',
-        mood: 'other',
-        weather: 'other',
+        title: "",
+        content: "",
+        mood: "other",
+        weather: "other",
         isPublic: false,
-        tags: '',
-        location: ''
+        tags: "",
+        location: "",
       });
       fetchDiaries();
     } catch (error) {
-      console.error('Error saving diary:', error);
+      console.error("Error saving diary:", error);
     }
   };
 
@@ -112,81 +203,87 @@ const PersonalDiary = () => {
       mood: diary.mood,
       weather: diary.weather,
       isPublic: diary.isPublic,
-      tags: diary.tags.join(', '),
-      location: diary.location
+      tags: diary.tags.join(", "),
+      location: diary.location,
     });
     setShowCreateForm(true);
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Bạn có chắc muốn xóa nhật ký này?')) {
+    if (window.confirm("Bạn có chắc muốn xóa nhật ký này?")) {
       try {
-        const token = localStorage.getItem('accessToken');
+        const token = localStorage.getItem("accessToken");
         await axios.delete(`http://localhost:9999/api/diaries/${id}`, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
         fetchDiaries();
       } catch (error) {
-        console.error('Error deleting diary:', error);
+        console.error("Error deleting diary:", error);
       }
     }
   };
 
-  const getMoodInfo = (mood) => moods.find(m => m.value === mood) || moods[moods.length - 1];
-  const getWeatherInfo = (weather) => weathers.find(w => w.value === weather) || weathers[weathers.length - 1];
+  const getMoodInfo = (mood) =>
+    moods.find((m) => m.value === mood) || moods[moods.length - 1];
+  const getWeatherInfo = (weather) =>
+    weathers.find((w) => w.value === weather) || weathers[weathers.length - 1];
 
   const handleLike = async (diaryId) => {
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await axios.put(`http://localhost:9999/api/diaries/${diaryId}/like`,
+      const token = localStorage.getItem("accessToken");
+      const response = await axios.put(
+        `http://localhost:9999/api/diaries/${diaryId}/like`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       // Cập nhật trạng thái like trong state
-      setDiaries(prevDiaries =>
-        prevDiaries.map(diary =>
+      setDiaries((prevDiaries) =>
+        prevDiaries.map((diary) =>
           diary._id === diaryId
             ? {
-              ...diary,
-              likeCount: response.data.likeCount,
-              isLiked: response.data.isLiked
-            }
+                ...diary,
+                likeCount: response.data.likeCount,
+                isLiked: response.data.isLiked,
+              }
             : diary
         )
       );
     } catch (error) {
-      console.error('Error toggling like:', error);
+      console.error("Error toggling like:", error);
     }
   };
 
   const handleComment = (diaryId) => {
     setShowCommentInput(diaryId);
-    setCommentText('');
+    setCommentText("");
   };
 
   const handleCancelComment = () => {
     setShowCommentInput(null);
-    setCommentText('');
+    setCommentText("");
   };
 
   const fetchComments = async (diaryId) => {
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await axios.get(`http://localhost:9999/api/diaries/${diaryId}/comments`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      console.log('Comments response:', response.data);
-      setComments(prev => ({
+      const token = localStorage.getItem("accessToken");
+      const response = await axios.get(
+        `http://localhost:9999/api/diaries/${diaryId}/comments`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      console.log("Comments response:", response.data);
+      setComments((prev) => ({
         ...prev,
-        [diaryId]: response.data.comments || []
+        [diaryId]: response.data.comments || [],
       }));
     } catch (error) {
-      console.error('Error fetching comments:', error);
+      console.error("Error fetching comments:", error);
       // Set empty array on error to prevent undefined issues
-      setComments(prev => ({
+      setComments((prev) => ({
         ...prev,
-        [diaryId]: []
+        [diaryId]: [],
       }));
     }
   };
@@ -206,19 +303,33 @@ const PersonalDiary = () => {
     if (!commentText.trim()) return;
 
     try {
-      const token = localStorage.getItem('accessToken');
-      await axios.post('http://localhost:9999/api/comments',
+      const token = localStorage.getItem("accessToken");
+      await axios.post(
+        "http://localhost:9999/api/comments",
         { diaryId, content: commentText.trim() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       // Reset form và refresh danh sách + comments
       setShowCommentInput(null);
-      setCommentText('');
+      setCommentText("");
       fetchDiaries(activeTab);
       fetchComments(diaryId); // Refresh comments
     } catch (error) {
-      console.error('Error creating comment:', error);
+      console.error("Error creating comment:", error);
     }
+  };
+
+  // Hàm reset filters
+  const resetFilters = () => {
+    setFilters({
+      mood: "",
+      weather: "",
+      tag: "",
+      fromDate: "",
+      toDate: "",
+      location: "",
+    });
+    setSearchQuery("");
   };
 
   if (loading) {
@@ -240,20 +351,22 @@ const PersonalDiary = () => {
         <div className="flex justify-between items-center mb-6">
           <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
             <button
-              onClick={() => setActiveTab('all')}
-              className={`px-4 py-2 rounded-md transition-colors ${activeTab === 'all'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
-                }`}
+              onClick={() => setActiveTab("all")}
+              className={`px-4 py-2 rounded-md transition-colors ${
+                activeTab === "all"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-gray-600 hover:text-gray-800"
+              }`}
             >
               🌍 Feed chung
             </button>
             <button
-              onClick={() => setActiveTab('my')}
-              className={`px-4 py-2 rounded-md transition-colors ${activeTab === 'my'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
-                }`}
+              onClick={() => setActiveTab("my")}
+              className={`px-4 py-2 rounded-md transition-colors ${
+                activeTab === "my"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-gray-600 hover:text-gray-800"
+              }`}
             >
               📖 Nhật ký của tôi
             </button>
@@ -267,21 +380,175 @@ const PersonalDiary = () => {
           </button>
         </div>
 
+        {/* Phần tìm kiếm và lọc mới */}
+        {/* Phần tìm kiếm và lọc tối ưu */}
+        <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-lg font-semibold">Tìm kiếm & Lọc</h3>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="text-blue-500 hover:text-blue-600 text-sm flex items-center gap-1"
+            >
+              {showFilters ? (
+                <>
+                  <span>Ẩn bộ lọc</span> <span>▲</span>
+                </>
+              ) : (
+                <>
+                  <span>Hiển thị bộ lọc</span> <span>▼</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Trường tìm kiếm luôn hiển thị */}
+          <div className="mb-3">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Tìm tiêu đề, nội dung, tag..."
+              className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+          </div>
+
+          {/* Bộ lọc ẩn/hiện */}
+          {showFilters && (
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              {/* Lọc theo mood */}
+              <div>
+                <label className="block text-xs font-medium mb-1">
+                  Tâm trạng
+                </label>
+                <select
+                  value={filters.mood}
+                  onChange={(e) =>
+                    setFilters({ ...filters, mood: e.target.value })
+                  }
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value="">Tất cả</option>
+                  {moods.map((mood) => (
+                    <option key={mood.value} value={mood.value}>
+                      {mood.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Lọc theo weather */}
+              <div>
+                <label className="block text-xs font-medium mb-1">
+                  Thời tiết
+                </label>
+                <select
+                  value={filters.weather}
+                  onChange={(e) =>
+                    setFilters({ ...filters, weather: e.target.value })
+                  }
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  <option value="">Tất cả</option>
+                  {weathers.map((weather) => (
+                    <option key={weather.value} value={weather.value}>
+                      {weather.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Lọc theo tag */}
+              <div>
+                <label className="block text-xs font-medium mb-1">Tag</label>
+                <input
+                  type="text"
+                  value={filters.tag}
+                  onChange={(e) =>
+                    setFilters({ ...filters, tag: e.target.value })
+                  }
+                  placeholder="Nhập tag..."
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+
+              {/* Lọc theo địa điểm */}
+              <div>
+                <label className="block text-xs font-medium mb-1">
+                  Địa điểm
+                </label>
+                <input
+                  type="text"
+                  value={filters.location}
+                  onChange={(e) =>
+                    setFilters({ ...filters, location: e.target.value })
+                  }
+                  placeholder="Nhập địa điểm..."
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+
+              {/* Lọc theo ngày (gộp vào 1 hàng) */}
+              <div className="col-span-2 flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs font-medium mb-1">
+                    Từ ngày
+                  </label>
+                  <input
+                    type="date"
+                    value={filters.fromDate}
+                    onChange={(e) =>
+                      setFilters({ ...filters, fromDate: e.target.value })
+                    }
+                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-medium mb-1">
+                    Đến ngày
+                  </label>
+                  <input
+                    type="date"
+                    value={filters.toDate}
+                    onChange={(e) =>
+                      setFilters({ ...filters, toDate: e.target.value })
+                    }
+                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Nút xóa lọc */}
+          <div className="flex justify-end mt-3">
+            <button
+              onClick={resetFilters}
+              className="px-3 py-1 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors text-sm"
+            >
+              Xóa lọc
+            </button>
+          </div>
+        </div>
+
         {/* Form tạo/sửa nhật ký */}
         {showCreateForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <h3 className="text-xl font-semibold mb-4">
-                {editingDiary ? 'Chỉnh sửa nhật ký' : 'Viết nhật ký mới'}
+                {editingDiary ? "Chỉnh sửa nhật ký" : "Viết nhật ký mới"}
               </h3>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Tiêu đề</label>
+                  <label className="block text-sm font-medium mb-2">
+                    Tiêu đề
+                  </label>
                   <input
                     type="text"
                     value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, title: e.target.value })
+                    }
                     className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
                   />
@@ -289,37 +556,53 @@ const PersonalDiary = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Tâm trạng</label>
+                    <label className="block text-sm font-medium mb-2">
+                      Tâm trạng
+                    </label>
                     <select
                       value={formData.mood}
-                      onChange={(e) => setFormData({ ...formData, mood: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, mood: e.target.value })
+                      }
                       className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     >
-                      {moods.map(mood => (
-                        <option key={mood.value} value={mood.value}>{mood.label}</option>
+                      {moods.map((mood) => (
+                        <option key={mood.value} value={mood.value}>
+                          {mood.label}
+                        </option>
                       ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">Thời tiết</label>
+                    <label className="block text-sm font-medium mb-2">
+                      Thời tiết
+                    </label>
                     <select
                       value={formData.weather}
-                      onChange={(e) => setFormData({ ...formData, weather: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, weather: e.target.value })
+                      }
                       className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     >
-                      {weathers.map(weather => (
-                        <option key={weather.value} value={weather.value}>{weather.label}</option>
+                      {weathers.map((weather) => (
+                        <option key={weather.value} value={weather.value}>
+                          {weather.label}
+                        </option>
                       ))}
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Nội dung</label>
+                  <label className="block text-sm font-medium mb-2">
+                    Nội dung
+                  </label>
                   <textarea
                     value={formData.content}
-                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, content: e.target.value })
+                    }
                     rows="6"
                     className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     placeholder="Hôm nay của bạn như thế nào..."
@@ -328,22 +611,30 @@ const PersonalDiary = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Địa điểm</label>
+                  <label className="block text-sm font-medium mb-2">
+                    Địa điểm
+                  </label>
                   <input
                     type="text"
                     value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, location: e.target.value })
+                    }
                     className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     placeholder="Bạn đang ở đâu?"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Hashtags (phân cách bằng dấu phẩy)</label>
+                  <label className="block text-sm font-medium mb-2">
+                    Hashtags (phân cách bằng dấu phẩy)
+                  </label>
                   <input
                     type="text"
                     value={formData.tags}
-                    onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, tags: e.target.value })
+                    }
                     className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500"
                     placeholder="gia đình, công việc, du lịch..."
                   />
@@ -354,7 +645,9 @@ const PersonalDiary = () => {
                     type="checkbox"
                     id="isPublic"
                     checked={formData.isPublic}
-                    onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, isPublic: e.target.checked })
+                    }
                     className="mr-2"
                   />
                   <label htmlFor="isPublic" className="text-sm">
@@ -369,13 +662,13 @@ const PersonalDiary = () => {
                       setShowCreateForm(false);
                       setEditingDiary(null);
                       setFormData({
-                        title: '',
-                        content: '',
-                        mood: 'other',
-                        weather: 'other',
+                        title: "",
+                        content: "",
+                        mood: "other",
+                        weather: "other",
                         isPublic: false,
-                        tags: '',
-                        location: ''
+                        tags: "",
+                        location: "",
                       });
                     }}
                     className="px-4 py-2 text-gray-600 border rounded-lg hover:bg-gray-50"
@@ -386,7 +679,7 @@ const PersonalDiary = () => {
                     type="submit"
                     className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
                   >
-                    {editingDiary ? 'Cập nhật' : 'Lưu nhật ký'}
+                    {editingDiary ? "Cập nhật" : "Lưu nhật ký"}
                   </button>
                 </div>
               </form>
@@ -394,51 +687,68 @@ const PersonalDiary = () => {
           </div>
         )}
 
-        {/* Danh sách nhật ký */}
+        {/* Danh sách nhật ký - Sử dụng filteredDiaries thay vì diaries */}
         <div className="space-y-4">
-          {diaries.length === 0 ? (
+          {filteredDiaries.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <div className="text-6xl mb-4">📖</div>
               <p className="text-lg">
-                {activeTab === 'all' ? 'Chưa có bài đăng công khai nào' : 'Chưa có nhật ký nào'}
+                {activeTab === "all"
+                  ? "Chưa có bài đăng công khai nào phù hợp"
+                  : "Chưa có nhật ký nào phù hợp"}
               </p>
               <p>
-                {activeTab === 'all'
-                  ? 'Hãy tạo bài đăng công khai để chia sẻ với mọi người!'
-                  : 'Hãy bắt đầu ghi lại những khoảnh khắc đáng nhớ!'
-                }
+                {activeTab === "all"
+                  ? "Hãy thử thay đổi bộ lọc hoặc tạo bài đăng công khai!"
+                  : "Hãy thử thay đổi bộ lọc hoặc bắt đầu ghi lại những khoảnh khắc đáng nhớ!"}
               </p>
             </div>
           ) : (
-            diaries.map((diary) => {
+            filteredDiaries.map((diary) => {
               const moodInfo = getMoodInfo(diary.mood);
               const weatherInfo = getWeatherInfo(diary.weather);
-              const currentUserId = localStorage.getItem('userId'); // Cần lấy từ token hoặc context
-              const isOwner = diary.userId._id === currentUserId || activeTab === 'my';
+              const currentUserId = localStorage.getItem("userId"); // Cần lấy từ token hoặc context
+              const isOwner =
+                diary.userId._id === currentUserId || activeTab === "my";
 
               return (
-                <div key={diary._id} className="bg-gray-50 rounded-lg p-6 hover:shadow-md transition-shadow">
+                <div
+                  key={diary._id}
+                  className="bg-gray-50 rounded-lg p-6 hover:shadow-md transition-shadow"
+                >
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1">
                       {/* Hiển thị tên tác giả nếu không phải bài của mình */}
-                      {activeTab === 'all' && diary.userId && (
+                      {activeTab === "all" && diary.userId && (
                         <div className="flex items-center mb-2">
                           <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mr-2">
-                            {diary.userId.fullName?.charAt(0) || 'U'}
+                            {diary.userId.fullName?.charAt(0) || "U"}
                           </div>
-                          <span className="text-sm font-medium text-gray-700">{diary.userId.fullName || 'User'}</span>
+                          <span className="text-sm font-medium text-gray-700">
+                            {diary.userId.fullName || "User"}
+                          </span>
                         </div>
                       )}
 
-                      <h3 className="text-xl font-semibold text-gray-800 mb-2">{diary.title}</h3>
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                        {diary.title}
+                      </h3>
                       <div className="flex items-center space-x-4 text-sm text-gray-600 mb-3">
-                        <span className={`px-2 py-1 rounded-full ${moodInfo.color}`}>
+                        <span
+                          className={`px-2 py-1 rounded-full ${moodInfo.color}`}
+                        >
                           {moodInfo.label}
                         </span>
                         <span>{weatherInfo.label}</span>
                         {diary.location && <span>📍 {diary.location}</span>}
-                        <span>{new Date(diary.createdAt).toLocaleDateString('vi-VN')}</span>
-                        {diary.isPublic && <span className="text-green-600">🌍 Công khai</span>}
+                        <span>
+                          {new Date(diary.createdAt).toLocaleDateString(
+                            "vi-VN"
+                          )}
+                        </span>
+                        {diary.isPublic && (
+                          <span className="text-green-600">🌍 Công khai</span>
+                        )}
                       </div>
                     </div>
 
@@ -461,12 +771,17 @@ const PersonalDiary = () => {
                     )}
                   </div>
 
-                  <p className="text-gray-700 mb-3 line-clamp-3">{diary.content}</p>
+                  <p className="text-gray-700 mb-3 line-clamp-3">
+                    {diary.content}
+                  </p>
 
                   {diary.tags && diary.tags.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-3">
                       {diary.tags.map((tag, index) => (
-                        <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                        <span
+                          key={index}
+                          className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs"
+                        >
                           #{tag}
                         </span>
                       ))}
@@ -486,16 +801,17 @@ const PersonalDiary = () => {
 
                     {/* Nút tương tác */}
                     <div className="flex space-x-2">
-                      {activeTab === 'all' && !isOwner && (
+                      {activeTab === "all" && !isOwner && (
                         <button
                           onClick={() => handleLike(diary._id)}
-                          className={`flex items-center space-x-1 px-3 py-1 rounded-full transition-colors ${diary.isLiked
-                              ? 'bg-red-100 text-red-700 border border-red-200'
-                              : 'bg-red-50 hover:bg-red-100 text-red-600'
-                            }`}
+                          className={`flex items-center space-x-1 px-3 py-1 rounded-full transition-colors ${
+                            diary.isLiked
+                              ? "bg-red-100 text-red-700 border border-red-200"
+                              : "bg-red-50 hover:bg-red-100 text-red-600"
+                          }`}
                         >
-                          <span>{diary.isLiked ? '❤️' : '🤍'}</span>
-                          <span>{diary.isLiked ? 'Đã thích' : 'Thích'}</span>
+                          <span>{diary.isLiked ? "❤️" : "🤍"}</span>
+                          <span>{diary.isLiked ? "Đã thích" : "Thích"}</span>
                         </button>
                       )}
                       <button
@@ -518,37 +834,47 @@ const PersonalDiary = () => {
                       {comments[diary._id] && comments[diary._id].length > 0 ? (
                         <div className="space-y-3 mb-4">
                           {comments[diary._id].map((comment) => (
-                            <div key={comment._id} className="bg-gray-50 rounded-lg p-3">
+                            <div
+                              key={comment._id}
+                              className="bg-gray-50 rounded-lg p-3"
+                            >
                               <div className="flex items-start space-x-3">
                                 <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                                  {comment.userId?.fullName?.charAt(0) || 'U'}
+                                  {comment.userId?.fullName?.charAt(0) || "U"}
                                 </div>
                                 <div className="flex-1">
                                   <div className="flex items-center space-x-2 mb-1">
                                     <span className="font-medium text-sm text-gray-800">
-                                      {comment.userId?.fullName || 'User'}
+                                      {comment.userId?.fullName || "User"}
                                     </span>
-                                    {comment.userId?._id === diary.userId?._id && (
+                                    {comment.userId?._id ===
+                                      diary.userId?._id && (
                                       <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs font-medium">
                                         Tác Giả
                                       </span>
                                     )}
                                     <span className="text-xs text-gray-500">
-                                      {new Date(comment.createdAt).toLocaleDateString('vi-VN')}
+                                      {new Date(
+                                        comment.createdAt
+                                      ).toLocaleDateString("vi-VN")}
                                     </span>
                                   </div>
-                                  <p className="text-gray-700 text-sm">{comment.content}</p>
+                                  <p className="text-gray-700 text-sm">
+                                    {comment.content}
+                                  </p>
                                 </div>
                               </div>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <p className="text-gray-500 text-sm mb-4">Chưa có bình luận nào</p>
+                        <p className="text-gray-500 text-sm mb-4">
+                          Chưa có bình luận nào
+                        </p>
                       )}
 
                       {/* Form thêm comment mới */}
-                      {activeTab === 'all' && !isOwner && (
+                      {activeTab === "all" && !isOwner && (
                         <div className="border-t pt-3">
                           <div className="flex space-x-3">
                             <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-white text-sm font-semibold">
@@ -556,7 +882,11 @@ const PersonalDiary = () => {
                             </div>
                             <div className="flex-1">
                               <textarea
-                                value={showCommentInput === diary._id ? commentText : ''}
+                                value={
+                                  showCommentInput === diary._id
+                                    ? commentText
+                                    : ""
+                                }
                                 onChange={(e) => {
                                   setCommentText(e.target.value);
                                   if (showCommentInput !== diary._id) {
@@ -576,7 +906,9 @@ const PersonalDiary = () => {
                                     Hủy
                                   </button>
                                   <button
-                                    onClick={() => handleSubmitComment(diary._id)}
+                                    onClick={() =>
+                                      handleSubmitComment(diary._id)
+                                    }
                                     disabled={!commentText.trim()}
                                     className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                                   >
@@ -592,32 +924,33 @@ const PersonalDiary = () => {
                   )}
 
                   {/* Comment Input cũ - chỉ hiển thị khi không xem comments */}
-                  {showCommentInput === diary._id && showComments !== diary._id && (
-                    <div className="mt-4 p-4 bg-gray-100 rounded-lg">
-                      <textarea
-                        value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
-                        placeholder="Viết bình luận của bạn..."
-                        className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        rows="3"
-                      />
-                      <div className="flex justify-end space-x-2 mt-3">
-                        <button
-                          onClick={handleCancelComment}
-                          className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-                        >
-                          Hủy
-                        </button>
-                        <button
-                          onClick={() => handleSubmitComment(diary._id)}
-                          disabled={!commentText.trim()}
-                          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                        >
-                          Gửi
-                        </button>
+                  {showCommentInput === diary._id &&
+                    showComments !== diary._id && (
+                      <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+                        <textarea
+                          value={commentText}
+                          onChange={(e) => setCommentText(e.target.value)}
+                          placeholder="Viết bình luận của bạn..."
+                          className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          rows="3"
+                        />
+                        <div className="flex justify-end space-x-2 mt-3">
+                          <button
+                            onClick={handleCancelComment}
+                            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                          >
+                            Hủy
+                          </button>
+                          <button
+                            onClick={() => handleSubmitComment(diary._id)}
+                            disabled={!commentText.trim()}
+                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                          >
+                            Gửi
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                 </div>
               );
             })
