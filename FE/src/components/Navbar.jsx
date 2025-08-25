@@ -11,6 +11,7 @@ import { Notification, UserProfile } from ".";
 import avatarPlaceholder from "../data/avatar.jpg";
 import { useStateContext } from "../contexts/ContextProvider";
 import axiosInstance from "../pages/Authentication/helper/axiosInstance";
+import { useWebSocket } from "../contexts/WebSocketContext";
 
 const NavButton = ({ title, customFunc, icon, color, dotColor }) => (
   <TooltipComponent content={title} position="BottomCenter">
@@ -39,6 +40,9 @@ const Navbar = () => {
     setScreenSize,
     screenSize,
   } = useStateContext();
+
+  // WebSocket hook để lấy thông báo
+  const { notifications, removeNotification, clearNotifications } = useWebSocket();
 
   const [avatarSrc, setAvatarSrc] = useState(avatarPlaceholder);
   const [loadingAvatar, setLoadingAvatar] = useState(true);
@@ -113,13 +117,20 @@ const Navbar = () => {
         icon={<AiOutlineMenu />}
       />
       <div className="flex">
-        <NavButton
-          title="Notification"
-          dotColor="rgb(254, 201, 15)"
-          customFunc={() => handleClick("notification")}
-          color={currentColor}
-          icon={<RiNotification3Line />}
-        />
+        <div className="relative">
+          <NavButton
+            title="Notification"
+            dotColor={notifications.length > 0 ? "rgb(239, 68, 68)" : "rgb(254, 201, 15)"}
+            customFunc={() => handleClick("notification")}
+            color={currentColor}
+            icon={<RiNotification3Line />}
+          />
+          {notifications.length > 0 && (
+            <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+              {notifications.length > 9 ? '9+' : notifications.length}
+            </div>
+          )}
+        </div>
         <TooltipComponent content="Profile" position="BottomCenter">
           <div
             className="flex items-center gap-2 cursor-pointer p-1 hover:bg-light-gray rounded-lg"

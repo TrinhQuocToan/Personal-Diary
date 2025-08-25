@@ -852,9 +852,31 @@ const PersonalDiary = () => {
             filteredDiaries.map((diary) => {
               const moodInfo = getMoodInfo(diary.mood);
               const weatherInfo = getWeatherInfo(diary.weather);
-              const currentUserId = localStorage.getItem("userId"); // Cần lấy từ token hoặc context
-              const isOwner =
-                diary.userId._id === currentUserId || activeTab === "my";
+              // Lấy userId từ token thay vì localStorage để đảm bảo chính xác
+              let currentUserId = null;
+              try {
+                const token = localStorage.getItem("accessToken");
+                if (token) {
+                  const payload = JSON.parse(atob(token.split('.')[1]));
+                  currentUserId = payload.id;
+                }
+              } catch (error) {
+                console.error('Error parsing token:', error);
+              }
+
+              const isOwner = diary.userId._id === currentUserId;
+
+              // Debug: Kiểm tra logic báo cáo
+              console.log('Debug báo cáo:', {
+                diaryId: diary._id,
+                diaryOwner: diary.userId._id,
+                currentUserId,
+                isOwner,
+                activeTab,
+                isPublic: diary.isPublic,
+                isAdmin: diary.userId?.role === 'admin',
+                shouldShowReport: activeTab === 'all' && !isOwner && diary.isPublic && diary.userId?.role !== 'admin'
+              });
 
               return (
                 <div
@@ -1047,7 +1069,7 @@ const PersonalDiary = () => {
                                   </div>
                                   <p className="text-gray-700 text-sm">{comment.content}</p>
                                   {activeTab === 'all' &&
-                                    comment.userId?._id !== diary.userId?._id &&
+                                    comment.userId?._id !== currentUserId &&
                                     comment.userId?.role !== 'admin' && (
                                       <button
                                         onClick={() => handleReport(comment._id, 'comment')}
