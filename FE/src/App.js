@@ -2,11 +2,14 @@ import React from "react";
 import "./App.css";
 import AppRouter from "./AppRouter";
 import { AuthProvider } from "./AuthContext";
+import { WebSocketProvider } from "./contexts/WebSocketContext";
 
 const App = () => {
   return (
     <AuthProvider>
-      <AppRouter />
+      <WebSocketProvider>
+        <AppRouter />
+      </WebSocketProvider>
     </AuthProvider>
   );
 };

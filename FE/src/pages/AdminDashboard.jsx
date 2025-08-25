@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import axiosInstance from './Authentication/helper/axiosInstance';
+import { useWebSocket } from '../contexts/WebSocketContext';
+import AdminNotificationBell from '../components/AdminNotificationBell';
 
 const AdminDashboard = () => {
     const [stats, setStats] = useState(null);
@@ -26,8 +28,15 @@ const AdminDashboard = () => {
     const [newRole, setNewRole] = useState('');
     const [newStatus, setNewStatus] = useState('');
     const [adminNotes, setAdminNotes] = useState('');
+    const [showRemoveModal, setShowRemoveModal] = useState(false);
+    const [selectedReportForRemoval, setSelectedReportForRemoval] = useState(null);
+    const [removalNotes, setRemovalNotes] = useState('');
+    const [reportedItemDetails, setReportedItemDetails] = useState(null);
+    const [postComments, setPostComments] = useState([]);
+    const [loadingItemDetails, setLoadingItemDetails] = useState(false);
 
     const navigate = useNavigate();
+    const { notifications, removeNotification } = useWebSocket();
 
 
 
@@ -242,12 +251,56 @@ const AdminDashboard = () => {
         setSelectedItem(item);
         setModalType(type);
         setShowDetailModal(true);
+
+        // Nếu là báo cáo, fetch thông tin chi tiết của item bị báo cáo
+        if (type === 'report') {
+            fetchReportedItemDetails(item);
+        }
     };
 
     const closeModal = () => {
         setShowDetailModal(false);
         setSelectedItem(null);
         setModalType('');
+        setReportedItemDetails(null);
+        setPostComments([]);
+    };
+
+    const fetchReportedItemDetails = async (report) => {
+        setLoadingItemDetails(true);
+        try {
+            if (report.itemType === 'post') {
+                // Fetch thông tin bài viết
+                const postResponse = await axiosInstance.get(`/api/diaries/${report.reportedItem}`);
+                console.log('Post response:', postResponse.data); // Debug log
+                setReportedItemDetails(postResponse.data.diary || postResponse.data);
+
+                // Fetch comments của bài viết
+                const commentsResponse = await axiosInstance.get(`/api/diaries/${report.reportedItem}/comments`);
+                console.log('Comments response:', commentsResponse.data); // Debug log
+                setPostComments(commentsResponse.data.comments || commentsResponse.data || []);
+            } else if (report.itemType === 'comment') {
+                // Fetch thông tin comment
+                const commentResponse = await axiosInstance.get(`/api/comments/${report.reportedItem}`);
+                console.log('Comment response:', commentResponse.data); // Debug log
+                setReportedItemDetails(commentResponse.data);
+
+                // Nếu comment có diaryId, fetch thông tin bài viết chứa comment
+                if (commentResponse.data.diaryId) {
+                    const postResponse = await axiosInstance.get(`/api/diaries/${commentResponse.data.diaryId}`);
+                    console.log('Parent post response:', postResponse.data); // Debug log
+                    setReportedItemDetails(prev => ({
+                        ...prev,
+                        parentPost: postResponse.data.diary || postResponse.data
+                    }));
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching reported item details:', error);
+            setReportedItemDetails(null);
+        } finally {
+            setLoadingItemDetails(false);
+        }
     };
 
     const handleRoleSubmit = async () => {
@@ -283,6 +336,41 @@ const AdminDashboard = () => {
         } catch (error) {
             console.error('Error updating status:', error);
             alert('Có lỗi xảy ra khi cập nhật trạng thái');
+        }
+    };
+
+    const handleRemoveItem = async () => {
+        if (!selectedReportForRemoval) return;
+
+        try {
+            const response = await axiosInstance.post(
+                `/api/reports/admin/${selectedReportForRemoval._id}/remove`,
+                { adminNotes: removalNotes }
+            );
+
+            alert(response.data.message);
+            setShowRemoveModal(false);
+            setSelectedReportForRemoval(null);
+            setRemovalNotes('');
+
+            // Refresh data
+            fetchReports();
+            fetchPosts();
+        } catch (error) {
+            console.error('Error removing item:', error);
+
+            // Hiển thị thông báo lỗi chi tiết hơn
+            let errorMessage = 'Có lỗi xảy ra khi gỡ nội dung';
+
+            if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.response?.data?.error) {
+                errorMessage = `Lỗi: ${error.response.data.error}`;
+            } else if (error.message) {
+                errorMessage = `Lỗi: ${error.message}`;
+            }
+
+            alert(errorMessage);
         }
     };
 
@@ -341,7 +429,14 @@ const AdminDashboard = () => {
     }
 
     if (loading) {
-        return <div className="text-center mt-8">Đang tải...</div>;
+        return (
+            <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-lg text-gray-600">Đang tải dữ liệu...</p>
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -362,6 +457,9 @@ const AdminDashboard = () => {
                             </div>
                         </div>
                         <div className="flex items-center space-x-4">
+                            {/* Admin Notification Bell */}
+                            <AdminNotificationBell />
+
                             <button
                                 onClick={() => navigate("/")}
                                 className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
@@ -533,11 +631,14 @@ const AdminDashboard = () => {
                                         >
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center">
-                                                    <div className="flex-shrink-0 h-10 w-10">
+                                                    <div className="flex-shrink-0 h-12 w-12">
                                                         <img
-                                                            className="h-10 w-10 rounded-full"
-                                                            src={user.avatar || 'https://via.placeholder.com/40'}
-                                                            alt=""
+                                                            className="h-12 w-12 rounded-full object-cover border-2 border-gray-200 shadow-sm"
+                                                            src={user.avatar ? `http://localhost:9999${user.avatar}` : 'https://via.placeholder.com/48'}
+                                                            alt={`Avatar của ${user.fullName}`}
+                                                            onError={(e) => {
+                                                                e.target.src = 'https://via.placeholder.com/48';
+                                                            }}
                                                         />
                                                     </div>
                                                     <div className="ml-4">
@@ -578,7 +679,7 @@ const AdminDashboard = () => {
                                                         </button>
                                                     ) : (
                                                         <>
-                                                            <button
+                                                            {/* <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation(); // Ngăn không cho trigger row click
                                                                     handleUserAction('changeRole', user._id);
@@ -586,7 +687,7 @@ const AdminDashboard = () => {
                                                                 className="text-blue-600 hover:text-blue-900"
                                                             >
                                                                 Thay đổi vai trò
-                                                            </button>
+                                                            </button> */}
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation(); // Ngăn không cho trigger row click
@@ -813,6 +914,17 @@ const AdminDashboard = () => {
                                                             >
                                                                 Cập nhật trạng thái
                                                             </button>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation(); // Ngăn không cho trigger row click
+                                                                    setSelectedReportForRemoval(report);
+                                                                    setRemovalNotes('');
+                                                                    setShowRemoveModal(true);
+                                                                }}
+                                                                className="text-orange-600 hover:text-orange-900"
+                                                            >
+                                                                Gỡ khỏi cộng đồng
+                                                            </button>
                                                         </>
                                                     )}
                                                     <button
@@ -1009,6 +1121,104 @@ const AdminDashboard = () => {
                     </div>
                 )}
 
+                {/* Remove Item Modal */}
+                {showRemoveModal && selectedReportForRemoval && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-semibold text-gray-900">
+                                    Gỡ nội dung khỏi cộng đồng
+                                </h3>
+                                <button
+                                    onClick={() => {
+                                        setShowRemoveModal(false);
+                                        setSelectedReportForRemoval(null);
+                                        setRemovalNotes('');
+                                    }}
+                                    className="text-gray-400 hover:text-gray-600 text-2xl"
+                                >
+                                    ×
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                    <div className="flex">
+                                        <div className="flex-shrink-0">
+                                            <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div className="ml-3">
+                                            <h3 className="text-sm font-medium text-yellow-800">
+                                                Cảnh báo
+                                            </h3>
+                                            <div className="mt-2 text-sm text-yellow-700">
+                                                <p>
+                                                    {selectedReportForRemoval.itemType === 'post' ? 'Bài viết' : 'Bình luận'} này sẽ bị gỡ khỏi cộng đồng.
+                                                    Người đăng sẽ nhận được thông báo về việc này.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Thông tin báo cáo
+                                    </label>
+                                    <div className="bg-gray-50 p-3 rounded-lg">
+                                        <p className="text-sm text-gray-900">
+                                            <strong>Người báo cáo:</strong> {selectedReportForRemoval.reporter?.fullName}
+                                        </p>
+                                        <p className="text-sm text-gray-900">
+                                            <strong>Lý do:</strong> {selectedReportForRemoval.reason.replace('_', ' ')}
+                                        </p>
+                                        {selectedReportForRemoval.description && (
+                                            <p className="text-sm text-gray-900">
+                                                <strong>Mô tả:</strong> {selectedReportForRemoval.description}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Ghi chú Admin (tùy chọn)
+                                    </label>
+                                    <textarea
+                                        value={removalNotes}
+                                        onChange={(e) => setRemovalNotes(e.target.value)}
+                                        rows="3"
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Nhập lý do gỡ nội dung khỏi cộng đồng..."
+                                        maxLength="500"
+                                    />
+                                </div>
+
+                                <div className="flex justify-end space-x-3 pt-4">
+                                    <button
+                                        onClick={() => {
+                                            setShowRemoveModal(false);
+                                            setSelectedReportForRemoval(null);
+                                            setRemovalNotes('');
+                                        }}
+                                        className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+                                    >
+                                        Hủy
+                                    </button>
+                                    <button
+                                        onClick={handleRemoveItem}
+                                        className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+                                    >
+                                        Gỡ khỏi cộng đồng
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Detail Modal */}
                 {showDetailModal && selectedItem && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -1029,6 +1239,24 @@ const AdminDashboard = () => {
 
                             {modalType === 'user' && (
                                 <div className="space-y-4">
+                                    {/* Avatar và thông tin cơ bản */}
+                                    <div className="flex items-center space-x-4 mb-4">
+                                        <div className="w-16 h-16">
+                                            <img
+                                                className="w-16 h-16 rounded-full object-cover"
+                                                src={selectedItem.avatar ? `http://localhost:9999${selectedItem.avatar}` : 'https://via.placeholder.com/64'}
+                                                alt={`Avatar của ${selectedItem.fullName}`}
+                                                onError={(e) => {
+                                                    e.target.src = 'https://via.placeholder.com/64';
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-lg font-semibold text-gray-900">{selectedItem.fullName}</h4>
+                                            <p className="text-sm text-gray-500">@{selectedItem.username}</p>
+                                        </div>
+                                    </div>
+
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">Họ và tên</label>
@@ -1147,6 +1375,7 @@ const AdminDashboard = () => {
 
                             {modalType === 'report' && (
                                 <div className="space-y-4">
+                                    {/* Thông tin cơ bản của báo cáo */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">Người báo cáo</label>
@@ -1175,6 +1404,8 @@ const AdminDashboard = () => {
                                             </span>
                                         </div>
                                     </div>
+
+                                    {/* Mô tả báo cáo */}
                                     {selectedItem.description && (
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">Mô tả</label>
@@ -1183,6 +1414,30 @@ const AdminDashboard = () => {
                                             </p>
                                         </div>
                                     )}
+
+                                    {/* Thông tin chi tiết của item bị báo cáo */}
+                                    <div className="border-t pt-4">
+                                        <h4 className="text-lg font-semibold text-gray-900 mb-3">
+                                            {selectedItem.itemType === 'post' ? 'Chi tiết bài viết bị báo cáo' : 'Chi tiết bình luận bị báo cáo'}
+                                        </h4>
+
+                                        {selectedItem.itemType === 'post' ? (
+                                            <ReportedPostDetails
+                                                report={selectedItem}
+                                                itemDetails={reportedItemDetails}
+                                                comments={postComments}
+                                                loading={loadingItemDetails}
+                                            />
+                                        ) : (
+                                            <ReportedCommentDetails
+                                                report={selectedItem}
+                                                itemDetails={reportedItemDetails}
+                                                loading={loadingItemDetails}
+                                            />
+                                        )}
+                                    </div>
+
+                                    {/* Ghi chú của admin */}
                                     {selectedItem.adminNotes && (
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700">Ghi chú của admin</label>
@@ -1191,21 +1446,25 @@ const AdminDashboard = () => {
                                             </p>
                                         </div>
                                     )}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700">Ngày báo cáo</label>
-                                        <p className="text-sm text-gray-900">
-                                            {new Date(selectedItem.createdAt).toLocaleString('vi-VN')}
-                                        </p>
-                                    </div>
-                                    {selectedItem.resolvedBy && (
+
+                                    {/* Thông tin thời gian */}
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Người xử lý</label>
-                                            <p className="text-sm text-gray-900">{selectedItem.resolvedBy?.fullName || 'Unknown'}</p>
-                                            <p className="text-xs text-gray-500">
-                                                {new Date(selectedItem.resolvedAt).toLocaleString('vi-VN')}
+                                            <label className="block text-sm font-medium text-gray-700">Ngày báo cáo</label>
+                                            <p className="text-sm text-gray-900">
+                                                {new Date(selectedItem.createdAt).toLocaleString('vi-VN')}
                                             </p>
                                         </div>
-                                    )}
+                                        {selectedItem.resolvedBy && (
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700">Người xử lý</label>
+                                                <p className="text-sm text-gray-900">{selectedItem.resolvedBy?.fullName || 'Unknown'}</p>
+                                                <p className="text-xs text-gray-500">
+                                                    {new Date(selectedItem.resolvedAt).toLocaleString('vi-VN')}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             )}
 
@@ -1221,6 +1480,214 @@ const AdminDashboard = () => {
                     </div>
                 )}
             </div>
+        </div>
+    );
+};
+
+// Component hiển thị chi tiết bài viết bị báo cáo
+const ReportedPostDetails = ({ report, itemDetails, comments, loading }) => {
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <span className="ml-2 text-gray-600">Đang tải thông tin...</span>
+            </div>
+        );
+    }
+
+    if (!itemDetails) {
+        return (
+            <div className="text-center py-8 text-gray-500">
+                Không thể tải thông tin bài viết
+            </div>
+        );
+    }
+
+    // Debug log để kiểm tra dữ liệu
+    console.log('ReportedPostDetails - itemDetails:', itemDetails);
+    console.log('ReportedPostDetails - comments:', comments);
+
+    return (
+        <div className="space-y-4">
+            {/* Thông tin bài viết */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+                <h5 className="font-semibold text-gray-900 mb-2">📝 Bài viết</h5>
+                <div className="space-y-2">
+                    <div>
+                        <span className="font-medium text-sm text-gray-700">Tiêu đề:</span>
+                        <p className="text-sm text-gray-900 ml-2">{itemDetails.title || 'Không có tiêu đề'}</p>
+                    </div>
+                    <div>
+                        <span className="font-medium text-sm text-gray-700">Nội dung:</span>
+                        <p className="text-sm text-gray-900 ml-2 bg-white p-2 rounded border">
+                            {itemDetails.content || 'Không có nội dung'}
+                        </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span className="font-medium text-gray-700">Tác giả:</span>
+                            <p className="text-gray-900 ml-2">
+                                {itemDetails.userId?.fullName || itemDetails.userId?.username || 'Unknown'}
+                            </p>
+                        </div>
+                        <div>
+                            <span className="font-medium text-gray-700">Tâm trạng:</span>
+                            <p className="text-gray-900 ml-2 capitalize">{itemDetails.mood || 'Không có'}</p>
+                        </div>
+                        <div>
+                            <span className="font-medium text-gray-700">Thời tiết:</span>
+                            <p className="text-gray-900 ml-2 capitalize">{itemDetails.weather || 'Không có'}</p>
+                        </div>
+                        <div>
+                            <span className="font-medium text-gray-700">Công khai:</span>
+                            <span className={`ml-2 px-2 py-1 text-xs rounded-full ${itemDetails.isPublic ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                {itemDetails.isPublic ? 'Có' : 'Không'}
+                            </span>
+                        </div>
+                    </div>
+                    {itemDetails.tags && itemDetails.tags.length > 0 && (
+                        <div>
+                            <span className="font-medium text-sm text-gray-700">Tags:</span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                                {itemDetails.tags.map((tag, index) => (
+                                    <span key={index} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                                        #{tag}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    <div>
+                        <span className="font-medium text-sm text-gray-700">Ngày tạo:</span>
+                        <p className="text-sm text-gray-900 ml-2">
+                            {itemDetails.createdAt ? new Date(itemDetails.createdAt).toLocaleString('vi-VN') : 'Không có ngày'}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Danh sách bình luận */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+                <h5 className="font-semibold text-gray-900 mb-3">💬 Bình luận ({comments.length})</h5>
+                {comments.length === 0 ? (
+                    <p className="text-gray-500 text-sm">Chưa có bình luận nào</p>
+                ) : (
+                    <div className="space-y-3 max-h-60 overflow-y-auto">
+                        {comments.map((comment) => (
+                            <div key={comment._id} className="bg-white p-3 rounded border">
+                                <div className="flex items-start space-x-2 mb-2">
+                                    <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-semibold">
+                                        {comment.userId?.fullName?.charAt(0) || "U"}
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="flex items-center space-x-2">
+                                            <span className="font-medium text-sm text-gray-900">
+                                                {comment.userId?.fullName || "Unknown"}
+                                            </span>
+                                            {comment.userId?.role === 'admin' && (
+                                                <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded-full text-xs font-medium">
+                                                    👑 Admin
+                                                </span>
+                                            )}
+                                            <span className="text-xs text-gray-500">
+                                                {new Date(comment.createdAt).toLocaleString('vi-VN')}
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-gray-700 mt-1">{comment.content}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// Component hiển thị chi tiết bình luận bị báo cáo
+const ReportedCommentDetails = ({ report, itemDetails, loading }) => {
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <span className="ml-2 text-gray-600">Đang tải thông tin...</span>
+            </div>
+        );
+    }
+
+    if (!itemDetails) {
+        return (
+            <div className="text-center py-8 text-gray-500">
+                Không thể tải thông tin bình luận
+            </div>
+        );
+    }
+
+    // Debug log để kiểm tra dữ liệu
+    console.log('ReportedCommentDetails - itemDetails:', itemDetails);
+
+    return (
+        <div className="space-y-4">
+            {/* Thông tin bình luận bị báo cáo */}
+            <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                <h5 className="font-semibold text-red-900 mb-2">🚨 Bình luận bị báo cáo</h5>
+                <div className="space-y-2">
+                    <div>
+                        <span className="font-medium text-sm text-red-700">Nội dung:</span>
+                        <p className="text-sm text-red-900 ml-2 bg-white p-2 rounded border">
+                            {itemDetails.content || 'Không có nội dung'}
+                        </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span className="font-medium text-red-700">Tác giả:</span>
+                            <p className="text-red-900 ml-2">
+                                {itemDetails.userId?.fullName || itemDetails.userId?.username || 'Unknown'}
+                            </p>
+                        </div>
+                        <div>
+                            <span className="font-medium text-red-700">Ngày tạo:</span>
+                            <p className="text-red-900 ml-2">
+                                {itemDetails.createdAt ? new Date(itemDetails.createdAt).toLocaleString('vi-VN') : 'Không có ngày'}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Thông tin bài viết chứa bình luận */}
+            {itemDetails.parentPost && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                    <h5 className="font-semibold text-gray-900 mb-2">📝 Bài viết chứa bình luận</h5>
+                    <div className="space-y-2">
+                        <div>
+                            <span className="font-medium text-sm text-gray-700">Tiêu đề:</span>
+                            <p className="text-sm text-gray-900 ml-2">{itemDetails.parentPost.title || 'Không có tiêu đề'}</p>
+                        </div>
+                        <div>
+                            <span className="font-medium text-sm text-gray-700">Nội dung:</span>
+                            <p className="text-sm text-gray-900 ml-2 bg-white p-2 rounded border">
+                                {itemDetails.parentPost.content || 'Không có nội dung'}
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span className="font-medium text-gray-700">Tác giả:</span>
+                                <p className="text-gray-900 ml-2">
+                                    {itemDetails.parentPost.userId?.fullName || itemDetails.parentPost.userId?.username || 'Unknown'}
+                                </p>
+                            </div>
+                            <div>
+                                <span className="font-medium text-gray-700">Ngày tạo:</span>
+                                <p className="text-sm text-gray-900 ml-2">
+                                    {itemDetails.parentPost.createdAt ? new Date(itemDetails.parentPost.createdAt).toLocaleString('vi-VN') : 'Không có ngày'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

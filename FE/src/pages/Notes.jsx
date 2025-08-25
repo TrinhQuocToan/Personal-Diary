@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Header } from "../components";
 import axios from "axios";
+import { useWebSocket } from "../contexts/WebSocketContext";
 
 const PersonalDiary = () => {
   const [diaries, setDiaries] = useState([]);
@@ -30,6 +31,9 @@ const PersonalDiary = () => {
     tags: "",
     location: "",
   });
+
+  // WebSocket hook
+  const { isConnected } = useWebSocket();
 
   // Thêm state mới cho bộ lọc
   const [showFilters, setShowFilters] = useState(false); // Mặc định ẩn bộ lọc
@@ -91,11 +95,28 @@ const PersonalDiary = () => {
 
   useEffect(() => {
     fetchDiaries(activeTab);
+    // Reset filters khi chuyển tab để tránh hiển thị dữ liệu không phù hợp
+    if (activeTab === "all") {
+      setFilters({
+        mood: "",
+        weather: "",
+        tag: "",
+        fromDate: "",
+        toDate: "",
+        location: "",
+      });
+      setSearchQuery("");
+    }
   }, [activeTab]);
 
   // Effect mới để áp dụng lọc và tìm kiếm mỗi khi diaries, searchQuery hoặc filters thay đổi
   useEffect(() => {
     let result = [...diaries];
+
+    // Lọc theo tab hiện tại - chỉ hiển thị bài viết public ở tab cộng đồng
+    if (activeTab === "all") {
+      result = result.filter((diary) => diary.isPublic === true);
+    }
 
     // Áp dụng tìm kiếm (tìm trong title, content, location, tags)
     if (searchQuery.trim()) {
@@ -140,7 +161,7 @@ const PersonalDiary = () => {
     }
 
     setFilteredDiaries(result);
-  }, [diaries, searchQuery, filters]);
+  }, [diaries, searchQuery, filters, activeTab]);
 
   const fetchDiaries = async (tab = activeTab) => {
     try {
@@ -196,7 +217,12 @@ const PersonalDiary = () => {
         tags: "",
         location: "",
       });
-      fetchDiaries();
+      // Refresh cả hai tab để đảm bảo dữ liệu được cập nhật
+      // Đặc biệt quan trọng khi thay đổi trạng thái isPublic
+      await Promise.all([
+        fetchDiaries("my"),
+        fetchDiaries("all")
+      ]);
     } catch (error) {
       console.error("Error saving diary:", error);
     }
@@ -358,7 +384,17 @@ const PersonalDiary = () => {
       alert('Báo cáo đã được gửi thành công!');
     } catch (error) {
       console.error('Error creating report:', error);
-      alert('Có lỗi xảy ra khi gửi báo cáo');
+
+      // Hiển thị thông báo lỗi chi tiết hơn
+      let errorMessage = 'Có lỗi xảy ra khi gửi báo cáo';
+
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = `Lỗi: ${error.message}`;
+      }
+
+      alert(errorMessage);
     }
   };
 
@@ -803,12 +839,12 @@ const PersonalDiary = () => {
               <div className="text-6xl mb-4">📖</div>
               <p className="text-lg">
                 {activeTab === "all"
-                  ? "Chưa có bài đăng công khai nào phù hợp"
+                  ? "Chưa có bài đăng công khai nào"
                   : "Chưa có nhật ký nào phù hợp"}
               </p>
               <p>
                 {activeTab === "all"
-                  ? "Hãy thử thay đổi bộ lọc hoặc tạo bài đăng công khai!"
+                  ? "Chỉ những bài viết được đánh dấu 'Cho phép người khác xem và bình luận' mới hiển thị ở đây"
                   : "Hãy thử thay đổi bộ lọc hoặc bắt đầu ghi lại những khoảnh khắc đáng nhớ!"}
               </p>
             </div>
@@ -830,12 +866,32 @@ const PersonalDiary = () => {
                       {/* Hiển thị tên tác giả nếu không phải bài của mình */}
                       {activeTab === "all" && diary.userId && (
                         <div className="flex items-center mb-2">
-                          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mr-2">
-                            {diary.userId.fullName?.charAt(0) || "U"}
+                          <div className="w-8 h-8 rounded-full mr-2 overflow-hidden">
+                            {diary.userId.avatar ? (
+                              <img
+                                src={`http://localhost:9999${diary.userId.avatar}`}
+                                alt={diary.userId.fullName || "User"}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div className={`w-full h-full ${diary.userId.avatar ? 'hidden' : 'flex'} bg-blue-500 rounded-full items-center justify-center text-white text-sm font-semibold`}>
+                              {diary.userId.fullName?.charAt(0) || "U"}
+                            </div>
                           </div>
-                          <span className="text-sm font-medium text-gray-700">
-                            {diary.userId.fullName || "User"}
-                          </span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-medium text-gray-700">
+                              {diary.userId.fullName || "User"}
+                            </span>
+                            {diary.userId.role === 'admin' && (
+                              <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded-full text-xs font-medium">
+                                👑 Admin
+                              </span>
+                            )}
+                          </div>
                         </div>
                       )}
 
@@ -855,7 +911,8 @@ const PersonalDiary = () => {
                             "vi-VN"
                           )}
                         </span>
-                        {diary.isPublic && (
+                        {/* Chỉ hiển thị "Công khai" khi ở tab cộng đồng và bài viết thực sự public */}
+                        {activeTab === "all" && diary.isPublic && (
                           <span className="text-green-600">🌍 Công khai</span>
                         )}
                       </div>
@@ -910,7 +967,8 @@ const PersonalDiary = () => {
 
                     {/* Nút tương tác */}
                     <div className="flex space-x-2">
-                      {activeTab === "all" && !isOwner && (
+                      {/* Chỉ cho phép like khi ở tab cộng đồng, không phải chủ sở hữu và bài viết public */}
+                      {activeTab === "all" && !isOwner && diary.isPublic && (
                         <button
                           onClick={() => handleLike(diary._id)}
                           className={`flex items-center space-x-1 px-3 py-1 rounded-full transition-colors ${diary.isLiked
@@ -922,14 +980,20 @@ const PersonalDiary = () => {
                           <span>{diary.isLiked ? "Đã thích" : "Thích"}</span>
                         </button>
                       )}
-                      <button
-                        onClick={() => handleComment(diary._id)}
-                        className="flex items-center space-x-1 px-3 py-1 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-600 transition-colors"
-                      >
-                        <span>💬</span>
-                        <span>Bình luận</span>
-                      </button>
-                      {activeTab === 'all' && !isOwner && (
+
+                      {/* Nút comment - chỉ hiển thị cho bài viết public hoặc bài viết của mình */}
+                      {(activeTab === "my" || (activeTab === "all" && diary.isPublic)) && (
+                        <button
+                          onClick={() => handleComment(diary._id)}
+                          className="flex items-center space-x-1 px-3 py-1 rounded-full bg-blue-50 hover:bg-blue-100 text-blue-600 transition-colors"
+                        >
+                          <span>💬</span>
+                          <span>Bình luận</span>
+                        </button>
+                      )}
+
+                      {/* Chỉ cho phép report khi ở tab cộng đồng, không phải chủ sở hữu, bài viết public và không phải của admin */}
+                      {activeTab === 'all' && !isOwner && diary.isPublic && diary.userId?.role !== 'admin' && (
                         <button
                           onClick={() => handleReport(diary._id, 'post')}
                           className="flex items-center space-x-1 px-3 py-1 rounded-full bg-orange-50 hover:bg-orange-100 text-orange-600 transition-colors"
@@ -941,8 +1005,8 @@ const PersonalDiary = () => {
                     </div>
                   </div>
 
-                  {/* Danh sách comments - hiển thị khi click vào số comment */}
-                  {showComments === diary._id && (
+                  {/* Danh sách comments - chỉ hiển thị cho bài viết public ở tab cộng đồng hoặc bài viết của mình */}
+                  {showComments === diary._id && (activeTab === "my" || (activeTab === "all" && diary.isPublic)) && (
                     <div className="mt-4 border-t pt-4">
                       <h4 className="font-semibold mb-3 text-gray-800">
                         Bình luận ({diary.commentCount || 0})
@@ -970,6 +1034,11 @@ const PersonalDiary = () => {
                                           Tác Giả
                                         </span>
                                       )}
+                                    {comment.userId?.role === 'admin' && (
+                                      <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded-full text-xs font-medium">
+                                        👑 Admin
+                                      </span>
+                                    )}
                                     <span className="text-xs text-gray-500">
                                       {new Date(
                                         comment.createdAt
@@ -977,14 +1046,16 @@ const PersonalDiary = () => {
                                     </span>
                                   </div>
                                   <p className="text-gray-700 text-sm">{comment.content}</p>
-                                  {activeTab === 'all' && comment.userId?._id !== diary.userId?._id && (
-                                    <button
-                                      onClick={() => handleReport(comment._id, 'comment')}
-                                      className="mt-2 text-xs text-orange-600 hover:text-orange-800 transition-colors"
-                                    >
-                                      🚨 Báo cáo
-                                    </button>
-                                  )}
+                                  {activeTab === 'all' &&
+                                    comment.userId?._id !== diary.userId?._id &&
+                                    comment.userId?.role !== 'admin' && (
+                                      <button
+                                        onClick={() => handleReport(comment._id, 'comment')}
+                                        className="mt-2 text-xs text-orange-600 hover:text-orange-800 transition-colors"
+                                      >
+                                        🚨 Báo cáo
+                                      </button>
+                                    )}
                                 </div>
                               </div>
                             </div>
@@ -996,12 +1067,12 @@ const PersonalDiary = () => {
                         </p>
                       )}
 
-                      {/* Form thêm comment mới */}
-                      {activeTab === "all" && !isOwner && (
+                      {/* Form thêm comment mới - chỉ hiển thị cho bài viết public */}
+                      {activeTab === "all" && !isOwner && diary.isPublic && (
                         <div className="border-t pt-3">
                           <div className="flex space-x-3">
                             <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                              U
+                              {localStorage.getItem('userFullName')?.charAt(0) || "U"}
                             </div>
                             <div className="flex-1">
                               <textarea
@@ -1046,9 +1117,10 @@ const PersonalDiary = () => {
                     </div>
                   )}
 
-                  {/* Comment Input cũ - chỉ hiển thị khi không xem comments */}
+                  {/* Comment Input cũ - chỉ hiển thị cho bài viết public hoặc bài viết của mình */}
                   {showCommentInput === diary._id &&
-                    showComments !== diary._id && (
+                    showComments !== diary._id &&
+                    (activeTab === "my" || (activeTab === "all" && diary.isPublic)) && (
                       <div className="mt-4 p-4 bg-gray-100 rounded-lg">
                         <textarea
                           value={commentText}

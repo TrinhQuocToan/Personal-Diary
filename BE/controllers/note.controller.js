@@ -1,13 +1,14 @@
 const mongoose = require("mongoose");
 const { Diary } = require("../models/note.model");
 const { Like } = require("../models/like.model");
+const { Comment } = require("../models/comment.model");
 
 // Lấy tất cả nhật ký (của user và public)
 exports.showAllDiaries = async (req, res) => {
   try {
     const { page = 1, limit = 10, mood, weather, tags } = req.query;
     const skip = (page - 1) * limit;
-    
+
     let filter = {
       $and: [
         { isDeleted: false },
@@ -16,7 +17,7 @@ exports.showAllDiaries = async (req, res) => {
         },
       ],
     };
-    
+
     // Thêm filter theo mood, weather, tags
     if (mood) filter.mood = mood;
     if (weather) filter.weather = weather;
@@ -31,11 +32,11 @@ exports.showAllDiaries = async (req, res) => {
     // Thêm thông tin like status cho từng diary
     const diariesWithLikeStatus = await Promise.all(
       diaries.map(async (diary) => {
-        const isLiked = await Like.findOne({ 
-          userId: req.account.id, 
-          diaryId: diary._id 
+        const isLiked = await Like.findOne({
+          userId: req.account.id,
+          diaryId: diary._id
         });
-        
+
         return {
           ...diary.toObject(),
           isLiked: !!isLiked
@@ -64,7 +65,7 @@ exports.getMyDiaries = async (req, res) => {
   try {
     const { page = 1, limit = 10, includeDeleted = false } = req.query;
     const skip = (page - 1) * limit;
-    
+
     let filter = { userId: req.account.id };
     if (!includeDeleted) {
       filter.isDeleted = false;
@@ -78,11 +79,11 @@ exports.getMyDiaries = async (req, res) => {
     // Thêm thông tin like status cho từng diary
     const diariesWithLikeStatus = await Promise.all(
       diaries.map(async (diary) => {
-        const isLiked = await Like.findOne({ 
-          userId: req.account.id, 
-          diaryId: diary._id 
+        const isLiked = await Like.findOne({
+          userId: req.account.id,
+          diaryId: diary._id
         });
-        
+
         return {
           ...diary.toObject(),
           isLiked: !!isLiked
@@ -139,9 +140,9 @@ exports.getDiaryDetail = async (req, res) => {
       isDeleted: false,
       parentCommentId: null // Chỉ lấy comment gốc
     })
-    .populate('userId', 'fullName avatar')
-    .sort({ createdAt: -1 })
-    .limit(20);
+      .populate('userId', 'fullName avatar')
+      .sort({ createdAt: -1 })
+      .limit(20);
 
     // Lấy replies cho mỗi comment
     const commentsWithReplies = await Promise.all(
@@ -150,10 +151,10 @@ exports.getDiaryDetail = async (req, res) => {
           parentCommentId: comment._id,
           isDeleted: false
         })
-        .populate('userId', 'fullName avatar')
-        .sort({ createdAt: 1 })
-        .limit(5);
-        
+          .populate('userId', 'fullName avatar')
+          .sort({ createdAt: 1 })
+          .limit(5);
+
         return {
           ...comment.toObject(),
           replies
@@ -230,7 +231,7 @@ exports.updateDiary = async (req, res) => {
       location,
       allowedViewers
     } = req.body;
-    
+
     const updateData = {
       title,
       content,

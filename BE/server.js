@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const { createServer } = require("http");
+const { Server } = require("socket.io");
 const connectDb = require("./config/db");
 require("dotenv").config();
 const userRouter = require("./routes/user.routes");
@@ -12,6 +14,13 @@ const reportRoutes = require("./routes/report.routes");
 
 const path = require("path");
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST"]
+  }
+});
 app.use(cors());
 app.use(express.json());
 app.use(bodyParser.json());
@@ -28,6 +37,30 @@ app.use("/uploads", (req, res, next) => {
   );
   next();
 });
+// WebSocket event handlers
+io.on('connection', (socket) => {
+  console.log('🔌 Client connected:', socket.id);
+
+  // Join admin room
+  socket.on('join-admin', () => {
+    socket.join('admin-room');
+    console.log('👑 Admin joined admin room');
+  });
+
+  // Join user room
+  socket.on('join-user', (userId) => {
+    socket.join(`user-${userId}`);
+    console.log(`👤 User ${userId} joined user room`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('🔌 Client disconnected:', socket.id);
+  });
+});
+
+// Make io available globally
+global.io = io;
+
 // Initialize routes
 app.use("/api", account);
 app.use("/api/user", userRouter);
@@ -42,8 +75,9 @@ const startServer = async () => {
     await connectDb();
 
     const PORT = process.env.PORT || 9999;
-    app.listen(PORT, () => {
+    httpServer.listen(PORT, () => {
       console.log(`✅ Server is running on port http://localhost:${PORT}`);
+      console.log(`🔌 WebSocket server is ready`);
     });
   } catch (error) {
     console.error("❌ Failed to start server:", error);

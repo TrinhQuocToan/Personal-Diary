@@ -29,16 +29,30 @@ const reportController = {
                 return res.status(400).json({ message: "Lý do báo cáo không hợp lệ" });
             }
 
-            // Kiểm tra xem item có tồn tại không
+            // Kiểm tra xem item có tồn tại không và lấy thông tin chi tiết
             let itemExists = false;
+            let itemDetails = null;
+
             if (itemType === "post") {
-                itemExists = await Diary.findById(reportedItem);
+                itemDetails = await Diary.findById(reportedItem).populate("userId", "role");
+                itemExists = itemDetails;
             } else if (itemType === "comment") {
-                itemExists = await Comment.findById(reportedItem);
+                itemDetails = await Comment.findById(reportedItem).populate("userId", "role");
+                itemExists = itemDetails;
             }
 
             if (!itemExists) {
-                return res.status(404).json({ message: "Item báo cáo không tồn tại" });
+                return res.status(404).json({ message: "Item báo cáo không tồn tại hoặc đã bị xóa" });
+            }
+
+            // Kiểm tra xem item có phải của chính mình không
+            if (itemDetails.userId._id.toString() === reporterId) {
+                return res.status(400).json({ message: "Bạn không thể báo cáo bài viết/bình luận của chính mình" });
+            }
+
+            // Kiểm tra xem item có phải của admin không
+            if (itemDetails.userId.role === "admin") {
+                return res.status(400).json({ message: "Không thể báo cáo bài viết/bình luận của admin" });
             }
 
             // Kiểm tra xem user đã báo cáo item này chưa
@@ -64,6 +78,20 @@ const reportController = {
             });
 
             await newReport.save();
+
+            // Gửi thông báo WebSocket cho admin
+            if (global.io) {
+                const populatedReport = await Report.findById(newReport._id)
+                    .populate("reporter", "fullName username email")
+                    .populate("reportedItem", "title content");
+
+                global.io.to('admin-room').emit('new-report', {
+                    type: 'new-report',
+                    report: populatedReport,
+                    message: `Có báo cáo mới từ ${populatedReport.reporter.fullName} về ${itemType === 'post' ? 'bài viết' : 'bình luận'}`,
+                    timestamp: new Date()
+                });
+            }
 
             return res.status(201).json({
                 message: "Báo cáo đã được gửi thành công",
@@ -245,6 +273,140 @@ const reportController = {
         } catch (error) {
             console.error("Restore report error:", error);
             return res.status(500).json({ message: "Lỗi server" });
+        }
+    },
+
+    // Gỡ bài viết/bình luận khỏi cộng đồng và thông báo cho người đăng
+    removeItemFromCommunity: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { adminNotes } = req.body;
+            const adminId = req.account.id;
+
+            if (!mongoose.Types.ObjectId.isValid(id)) {
+                return res.status(400).json({ message: "ID không hợp lệ" });
+            }
+
+            const report = await Report.findById(id)
+                .populate("reporter", "fullName username email");
+
+            if (!report) {
+                return res.status(404).json({ message: "Báo cáo không tồn tại" });
+            }
+
+            // Kiểm tra xem reportedItem có tồn tại không
+            if (!report.reportedItem) {
+                return res.status(400).json({ message: "Item báo cáo không tồn tại hoặc đã bị xóa" });
+            }
+
+            let removedItem;
+            let itemOwner;
+
+            if (report.itemType === "post") {
+                // Kiểm tra xem bài viết có tồn tại không
+                const existingPost = await Diary.findById(report.reportedItem);
+                if (!existingPost) {
+                    return res.status(404).json({ message: "Bài viết báo cáo không tồn tại hoặc đã bị xóa" });
+                }
+
+                // Gỡ bài viết khỏi cộng đồng (set isPublic = false)
+                removedItem = await Diary.findByIdAndUpdate(
+                    report.reportedItem,
+                    {
+                        isPublic: false,
+                        removedByAdmin: true,
+                        adminRemovalNotes: adminNotes || "Bài viết đã bị gỡ khỏi cộng đồng do vi phạm quy tắc",
+                        removedAt: new Date()
+                    },
+                    { new: true }
+                ).populate("userId", "fullName username email");
+
+                itemOwner = removedItem.userId;
+            } else if (report.itemType === "comment") {
+                // Kiểm tra xem bình luận có tồn tại không
+                const existingComment = await Comment.findById(report.reportedItem);
+                if (!existingComment) {
+                    return res.status(404).json({ message: "Bình luận báo cáo không tồn tại hoặc đã bị xóa" });
+                }
+
+                // Xóa bình luận
+                removedItem = await Comment.findByIdAndUpdate(
+                    report.reportedItem,
+                    {
+                        isDeleted: true,
+                        deletedByAdmin: true,
+                        adminRemovalNotes: adminNotes || "Bình luận đã bị xóa do vi phạm quy tắc",
+                        deletedAt: new Date()
+                    },
+                    { new: true }
+                ).populate("userId", "fullName username email");
+
+                itemOwner = removedItem.userId;
+            } else {
+                return res.status(400).json({ message: "Loại item báo cáo không hợp lệ" });
+            }
+
+            // Cập nhật trạng thái báo cáo
+            await Report.findByIdAndUpdate(id, {
+                status: "resolved",
+                resolvedBy: adminId,
+                resolvedAt: new Date(),
+                adminNotes: adminNotes || "Item đã bị gỡ khỏi cộng đồng"
+            });
+
+            // Gửi thông báo WebSocket cho người đăng bài viết/bình luận
+            if (global.io && itemOwner && itemOwner._id) {
+                try {
+                    global.io.to(`user-${itemOwner._id}`).emit('item-removed', {
+                        type: 'item-removed',
+                        itemType: report.itemType,
+                        itemTitle: report.itemType === "post" ? (removedItem.title || "Bài viết") : "Bình luận của bạn",
+                        reason: "Vi phạm quy tắc cộng đồng",
+                        adminNotes: adminNotes || "Nội dung đã bị gỡ khỏi cộng đồng",
+                        timestamp: new Date()
+                    });
+                } catch (wsError) {
+                    console.error("WebSocket error when sending user notification:", wsError);
+                }
+            }
+
+            // Gửi thông báo cho admin
+            if (global.io) {
+                try {
+                    global.io.to('admin-room').emit('item-removed-admin', {
+                        type: 'item-removed-admin',
+                        report: {
+                            _id: report._id,
+                            itemType: report.itemType,
+                            reason: report.reason,
+                            description: report.description
+                        },
+                        removedItem: {
+                            _id: removedItem._id,
+                            title: removedItem.title || "Nội dung",
+                            content: removedItem.content || "Nội dung đã bị gỡ"
+                        },
+                        message: `${report.itemType === "post" ? "Bài viết" : "Bình luận"} đã bị gỡ khỏi cộng đồng`,
+                        timestamp: new Date()
+                    });
+                } catch (wsError) {
+                    console.error("WebSocket error when sending admin notification:", wsError);
+                }
+            }
+
+            return res.status(200).json({
+                message: `${report.itemType === "post" ? "Bài viết" : "Bình luận"} đã bị gỡ khỏi cộng đồng thành công`,
+                removedItem: removedItem
+            });
+        } catch (error) {
+            console.error("Remove item from community error:", error);
+            console.error("Report ID:", id);
+            console.error("Report data:", report);
+            return res.status(500).json({
+                message: "Lỗi server",
+                error: error.message,
+                details: "Vui lòng kiểm tra logs để biết thêm chi tiết"
+            });
         }
     },
 

@@ -14,5 +14,6 @@ router.put("/admin/:id/status", authMiddleware, adminMiddleware, reportControlle
 router.delete("/admin/:id", authMiddleware, adminMiddleware, reportController.deleteReport);
 router.patch("/admin/:id/restore", authMiddleware, adminMiddleware, reportController.restoreReport);
 router.get("/admin/stats", authMiddleware, adminMiddleware, reportController.getReportStats);
+router.post("/admin/:id/remove", authMiddleware, adminMiddleware, reportController.removeItemFromCommunity);
 
 module.exports = router;

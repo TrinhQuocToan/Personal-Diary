@@ -499,7 +499,7 @@ const UserProfilePage = () => {
 
   return (
     <div className="profile-container">
-      <h2>User Profile</h2>
+      <h2>Thông tin cá nhân</h2>
 
       {errors.general && (
         <div className="alert alert-error">
@@ -541,7 +541,7 @@ const UserProfilePage = () => {
               <span>📷</span>
             </div>
           </div>
-          <p className="avatar-hint">Click to change avatar</p>
+          <p className="avatar-hint">Click để thay đổi ảnh đại diện</p>
           {errors.avatar && (
             <p className="text-danger error-message">{errors.avatar}</p>
           )}
@@ -562,25 +562,25 @@ const UserProfilePage = () => {
           className={`tab-button ${activeTab === "personal" ? "active" : ""}`}
           onClick={() => setActiveTab("personal")}
         >
-          Personal Info
+          Thông tin cá nhân
         </button>
         <button
           className={`tab-button ${activeTab === "contact" ? "active" : ""}`}
           onClick={() => setActiveTab("contact")}
         >
-          Contact Info
+          Thông tin liên hệ
         </button>
         <button
           className={`tab-button ${activeTab === "account" ? "active" : ""}`}
           onClick={() => setActiveTab("account")}
         >
-          Account Settings
+          Cài đặt tài khoản
         </button>
         <button
           className={`tab-button ${activeTab === "security" ? "active" : ""}`}
           onClick={() => setActiveTab("security")}
         >
-          Security
+          Bảo mật
         </button>
       </div>
 
@@ -589,7 +589,7 @@ const UserProfilePage = () => {
         <form onSubmit={handleSubmitProfile}>
           <div className="profile-form-row">
             <label htmlFor="fullName">
-              Full Name <span className="required">*</span>
+              Họ và tên <span className="required">*</span>
             </label>
             <input
               type="text"
@@ -598,7 +598,7 @@ const UserProfilePage = () => {
               value={profile.fullName}
               onChange={handleChange}
               className={`form-control ${errors.fullName ? "error" : ""}`}
-              placeholder="Enter your full name"
+              placeholder="Nhập họ và tên"
               maxLength="50"
             />
             {errors.fullName && (
@@ -610,7 +610,7 @@ const UserProfilePage = () => {
           </div>
 
           <div className="profile-form-row">
-            <label htmlFor="dob">Date of Birth</label>
+            <label htmlFor="dob">Ngày sinh</label>
             <input
               type="date"
               id="dob"
@@ -634,10 +634,10 @@ const UserProfilePage = () => {
               onChange={handleChange}
               className="form-control form-select"
             >
-              <option value="">Select Gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
+              <option value="">Chọn giới tính</option>
+              <option value="Male">Nam</option>
+              <option value="Female">Nữ</option>
+              <option value="Other">Khác</option>
             </select>
           </div>
 
@@ -648,7 +648,7 @@ const UserProfilePage = () => {
               className="btn-secondary"
               disabled={saving}
             >
-              Reset
+              Làm mới
             </button>
             <button
               type="submit"
@@ -661,7 +661,7 @@ const UserProfilePage = () => {
                   Saving...
                 </>
               ) : (
-                "Save Personal Info"
+                "Lưu thông tin cá nhân"
               )}
             </button>
           </div>
@@ -672,7 +672,7 @@ const UserProfilePage = () => {
       {activeTab === "contact" && (
         <form onSubmit={handleSubmitProfile}>
           <div className="profile-form-row">
-            <label htmlFor="mobileNumber">Mobile Number</label>
+              <label htmlFor="mobileNumber">Số điện thoại</label>
             <input
               type="tel"
               id="mobileNumber"
@@ -680,7 +680,7 @@ const UserProfilePage = () => {
               value={profile.mobileNumber}
               onChange={handleChange}
               className={`form-control ${errors.mobileNumber ? "error" : ""}`}
-              placeholder="Enter your phone number"
+              placeholder="Nhập số điện thoại"
               maxLength="15"
             />
             {errors.mobileNumber && (
@@ -689,14 +689,14 @@ const UserProfilePage = () => {
           </div>
 
           <div className="profile-form-row">
-            <label htmlFor="address1">Address</label>
+            <label htmlFor="address1">Địa chỉ</label>
             <textarea
               id="address1"
               name="address1"
               value={profile.address1}
               onChange={handleChange}
               className={`form-control ${errors.address1 ? "error" : ""}`}
-              placeholder="Enter your address"
+              placeholder="Nhập địa chỉ"
               maxLength="200"
               rows="3"
             />
@@ -709,7 +709,7 @@ const UserProfilePage = () => {
           </div>
 
           <div className="profile-form-row">
-            <label htmlFor="country">Country</label>
+            <label htmlFor="country">Quốc gia</label>
             <input
               type="text"
               id="country"
@@ -717,7 +717,7 @@ const UserProfilePage = () => {
               value={profile.country}
               onChange={handleChange}
               className={`form-control ${errors.country ? "error" : ""}`}
-              placeholder="Enter your country"
+              placeholder="Nhập quốc gia"
               maxLength="50"
             />
             {errors.country && (
@@ -735,16 +735,16 @@ const UserProfilePage = () => {
               className="btn-secondary"
               disabled={saving}
             >
-              Reset
+              Làm mới
             </button>
             <button type="submit" className="btn-primary" disabled={saving}>
               {saving ? (
                 <>
                   <span className="spinner"></span>
-                  Saving...
+                  Lưu thông tin liên hệ...
                 </>
               ) : (
-                "Save Contact Info"
+                "Lưu thông tin liên hệ"
               )}
             </button>
           </div>
@@ -755,15 +755,15 @@ const UserProfilePage = () => {
       {activeTab === "account" && (
         <form onSubmit={handleChangeEmail}>
           <div className="security-info">
-            <h4>Change Email Address</h4>
+            <h4>Thay đổi địa chỉ email</h4>
             <p>
-              You'll need to enter your password to change your email address.
-              Make sure you have access to your new email address.
+              Bạn cần nhập mật khẩu để thay đổi địa chỉ email.
+              Hãy đảm bảo bạn có quyền truy cập vào địa chỉ email mới.
             </p>
           </div>
 
           <div className="profile-form-row">
-            <label htmlFor="currentEmail">Current Email</label>
+            <label htmlFor="currentEmail">Email hiện tại</label>
             <input
               type="email"
               id="currentEmail"
@@ -775,7 +775,7 @@ const UserProfilePage = () => {
 
           <div className="profile-form-row">
             <label htmlFor="newEmail">
-              New Email Address <span className="required">*</span>
+              Địa chỉ email mới <span className="required">*</span>
             </label>
             <input
               type="email"
@@ -784,7 +784,7 @@ const UserProfilePage = () => {
               value={emailData.newEmail}
               onChange={handleEmailChange}
               className={`form-control ${errors.newEmail ? "error" : ""}`}
-              placeholder="Enter your new email address"
+              placeholder="Nhập địa chỉ email mới"
             />
             {errors.newEmail && (
               <p className="text-danger error-message">{errors.newEmail}</p>
@@ -793,7 +793,7 @@ const UserProfilePage = () => {
 
           <div className="profile-form-row">
             <label htmlFor="password">
-              Current Password <span className="required">*</span>
+              Mật khẩu hiện tại <span className="required">*</span>
             </label>
             <input
               type="password"
@@ -802,7 +802,7 @@ const UserProfilePage = () => {
               value={emailData.password}
               onChange={handleEmailChange}
               className={`form-control ${errors.password ? "error" : ""}`}
-              placeholder="Enter your current password"
+              placeholder="Nhập mật khẩu hiện tại"
             />
             {errors.password && (
               <p className="text-danger error-message">{errors.password}</p>
@@ -816,7 +816,7 @@ const UserProfilePage = () => {
               className="btn-secondary"
               disabled={changingEmail}
             >
-              Reset
+              Làm mới
             </button>
             <button
               type="submit"
@@ -828,10 +828,10 @@ const UserProfilePage = () => {
               {changingEmail ? (
                 <>
                   <span className="spinner"></span>
-                  Changing Email...
+                  Thay đổi địa chỉ email...
                 </>
               ) : (
-                "Change Email"
+                "Thay đổi địa chỉ email"
               )}
             </button>
           </div>
@@ -842,17 +842,15 @@ const UserProfilePage = () => {
       {activeTab === "security" && (
         <form onSubmit={handleChangePassword}>
           <div className="security-info">
-            <h4>Change Password</h4>
+            <h4>Thay đổi mật khẩu</h4>
             <p>
-              Choose a strong password to keep your account secure. We recommend
-              using a combination of uppercase and lowercase letters, numbers,
-              and special characters.
+              Hãy chọn một mật khẩu mạnh để bảo vệ tài khoản của bạn. Chúng tôi khuyên bạn nên sử dụng một tổ hợp của chữ cái viết hoa, chữ cái viết thường, số và ký tự đặc biệt.
             </p>
           </div>
 
           <div className="profile-form-row">
             <label htmlFor="currentPassword">
-              Current Password <span className="required">*</span>
+              Mật khẩu hiện tại <span className="required">*</span>
             </label>
             <input
               type="password"
@@ -863,7 +861,7 @@ const UserProfilePage = () => {
               className={`form-control ${
                 errors.currentPassword ? "error" : ""
               }`}
-              placeholder="Enter your current password"
+              placeholder="Nhập mật khẩu hiện tại"
             />
             {errors.currentPassword && (
               <p className="text-danger error-message">
@@ -874,7 +872,7 @@ const UserProfilePage = () => {
 
           <div className="profile-form-row">
             <label htmlFor="newPassword">
-              New Password <span className="required">*</span>
+              Mật khẩu mới <span className="required">*</span>
             </label>
             <input
               type="password"
@@ -883,7 +881,7 @@ const UserProfilePage = () => {
               value={passwordData.newPassword}
               onChange={handlePasswordChange}
               className={`form-control ${errors.newPassword ? "error" : ""}`}
-              placeholder="Enter your new password"
+              placeholder="Nhập mật khẩu mới"
             />
             {errors.newPassword && (
               <p className="text-danger error-message">{errors.newPassword}</p>
@@ -892,7 +890,7 @@ const UserProfilePage = () => {
 
           <div className="profile-form-row">
             <label htmlFor="confirmPassword">
-              Confirm New Password <span className="required">*</span>
+              Xác nhận mật khẩu mới <span className="required">*</span>
             </label>
             <input
               type="password"
@@ -903,7 +901,7 @@ const UserProfilePage = () => {
               className={`form-control ${
                 errors.confirmPassword ? "error" : ""
               }`}
-              placeholder="Confirm your new password"
+              placeholder="Xác nhận mật khẩu mới"
             />
             {errors.confirmPassword && (
               <p className="text-danger error-message">
@@ -919,7 +917,7 @@ const UserProfilePage = () => {
               className="btn-secondary"
               disabled={changingPassword}
             >
-              Reset
+              Làm mới
             </button>
             <button
               type="submit"
