@@ -48,13 +48,11 @@ const userSchema = new mongoose.Schema(
     avatar: { type: String, default: "" },
     otp: { type: String, default: null },
     otpExpiration: { type: Date, default: null },
+    isVerified: { type: Boolean, default: false },
     role: { type: String, enum: ["user", "admin"], default: "user" },
   },
   { timestamps: true, versionKey: false }
 );
-
-// Remove pre-save hook since we're handling password hashing in controllers
-// This prevents double hashing
 
 const User = mongoose.model("User", userSchema);
 module.exports = User;

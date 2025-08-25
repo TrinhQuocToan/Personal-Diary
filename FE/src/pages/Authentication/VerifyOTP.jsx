@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "./helper/axiosInstance";
+import { AuthContext } from "../../AuthContext";
 
 const VerifyOTP = () => {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -10,12 +11,32 @@ const VerifyOTP = () => {
   const [message, setMessage] = useState("");
   const otpInputs = useRef([]);
   const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
 
   useEffect(() => {
-    const storedEmail = localStorage.getItem("forgotPasswordEmail");
+    const storedEmail = localStorage.getItem("verifyEmail");
+    const storedMessage = localStorage.getItem("otpMessage");
+    const rememberMe = JSON.parse(
+      localStorage.getItem("rememberMe") || "false"
+    );
+    console.log(
+      "VerifyOTP mounted. Stored email:",
+      storedEmail,
+      "Stored message:",
+      storedMessage,
+      "rememberMe:",
+      rememberMe
+    );
     if (!storedEmail) {
-      setError("Session expired! Please request password reset again.");
-      setTimeout(() => navigate("/forgot-password"), 3000);
+      setError("Session expired! Please register or try logging in again.");
+      console.log("No email found in localStorage. Redirecting to /register");
+      setTimeout(() => navigate("/register"), 3000);
+      return;
+    }
+    if (storedMessage) {
+      setMessage(storedMessage);
+      localStorage.removeItem("otpMessage");
+      console.log("Displayed and cleared otpMessage from localStorage");
     }
 
     const timer = setInterval(() => {
@@ -45,6 +66,7 @@ const VerifyOTP = () => {
       }
 
       if (newOtp.join("").length === 6) {
+        console.log("OTP entered:", newOtp.join(""));
         verifyOtp(newOtp.join(""));
       }
     }
@@ -59,25 +81,56 @@ const VerifyOTP = () => {
   const verifyOtp = async (otpCode) => {
     if (!/^\d{6}$/.test(otpCode)) {
       setError("Please enter a valid 6-digit OTP.");
+      console.log("Invalid OTP format:", otpCode);
       return;
     }
 
-    const email = localStorage.getItem("forgotPasswordEmail"); // Get email from localStorage
+    const email = localStorage.getItem("verifyEmail");
+    const rememberMe = JSON.parse(
+      localStorage.getItem("rememberMe") || "false"
+    );
     if (!email) {
-      setError("Session expired! Please request password reset again.");
+      setError("Session expired! Please register or try logging in again.");
+      console.log("No email found in localStorage during OTP verification");
       return;
     }
 
     try {
+      console.log(
+        "Sending OTP verification request for email:",
+        email,
+        "OTP:",
+        otpCode,
+        "rememberMe:",
+        rememberMe
+      );
       const response = await axiosInstance.post("/api/verify-otp", {
         otp: otpCode,
-        email, // Include email in the request body
+        email,
+        rememberMe,
       });
-      setMessage(response.data.message || "OTP verified successfully!");
+      console.log("OTP verification response:", response);
+      setMessage(
+        response.data.message || "OTP verified successfully! Account activated."
+      );
       setError("");
-      setTimeout(() => {
-        navigate("/reset-password");
-      }, 2000);
+      localStorage.removeItem("verifyEmail");
+      localStorage.removeItem("rememberMe");
+      console.log("Cleared verifyEmail and rememberMe from localStorage.");
+
+      // Hoàn tất đăng nhập bằng cách gọi hàm login từ AuthContext
+      if (response.data.accessToken && response.data.refreshToken) {
+        login(
+          response.data.accessToken,
+          response.data.refreshToken,
+          response.data.rememberMe
+        );
+        console.log("Login successful with tokens. Redirecting to /");
+        navigate("/");
+      } else {
+        console.log("No tokens received. Redirecting to /login");
+        navigate("/login");
+      }
     } catch (error) {
       const errorMessage =
         error.response?.data?.message || "Something went wrong!";
@@ -85,6 +138,7 @@ const VerifyOTP = () => {
       setMessage("");
       setOtp(["", "", "", "", "", ""]);
       otpInputs.current[0].focus();
+      console.error("OTP verification error:", error);
     }
   };
 
@@ -92,20 +146,24 @@ const VerifyOTP = () => {
     setCanResend(false);
     setCountdown(60);
     try {
-      const email = localStorage.getItem("forgotPasswordEmail");
+      const email = localStorage.getItem("verifyEmail");
       if (!email) {
-        setError("Session expired! Please request password reset again.");
+        setError("Session expired! Please register or try logging in again.");
+        console.log("No email found in localStorage for resend OTP");
         return;
       }
+      console.log("Requesting OTP resend for email:", email);
       await axiosInstance.post("/api/forgot-password", { email });
-      setMessage("OTP has been resent to your email.");
+      setMessage("A new OTP has been sent to your email.");
       setError("");
+      console.log("OTP resent successfully");
     } catch (error) {
       const errorMessage =
         error.response?.data?.message || "Failed to resend OTP";
       setError(errorMessage);
       setMessage("");
       setCanResend(true);
+      console.error("Resend OTP error:", error);
     }
   };
 
@@ -127,10 +185,11 @@ const VerifyOTP = () => {
             </div>
           </div>
           <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-            Verify OTP
+            Verify Your Account
           </h2>
           <p className="text-gray-600 mb-6">
-            Enter the One-Time Password (OTP) sent to your email.
+            Enter the One-Time Password (OTP) sent to your email to activate
+            your account.
           </p>
           <div className="flex justify-center gap-2 mb-4">
             {otp.map((digit, index) => (

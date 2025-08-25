@@ -8,6 +8,7 @@ function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [message, setMessage] = useState(null);
   const [errors, setErrors] = useState({});
   const { login } = useContext(AuthContext);
@@ -43,19 +44,69 @@ function Login() {
     setMessage(null);
 
     if (!validateForm()) {
+      console.log("Form validation failed:", errors);
       return;
     }
 
     try {
+      console.log("Attempting login with username:", username, "rememberMe:", rememberMe);
       const response = await axiosInstance.post("/api/login", {
         username,
         password,
+        rememberMe,
       });
+      console.log("Login response:", response);
 
+      // Kiểm tra phản hồi 403 để yêu cầu OTP
+      if (response.status === 403) {
+        console.log("OTP required. Response data:", response.data);
+        localStorage.setItem("verifyEmail", response.data.email);
+        localStorage.setItem("rememberMe", JSON.stringify(response.data.rememberMe));
+        localStorage.setItem(
+          "otpMessage",
+          response.data.message || "A new OTP has been sent to your email. Please verify to continue."
+        );
+        try {
+          console.log("Navigating to /verify-otp");
+          navigate("/verify-otp", { replace: true });
+        } catch (navError) {
+          console.error("Navigation error:", navError);
+          setMessage({
+            type: "error",
+            text: "Failed to redirect to OTP verification page. Please try again.",
+          });
+        }
+        return;
+      }
+
+      // Xử lý đăng nhập thành công
+      console.log("Login successful. Response data:", response.data);
       setMessage({ type: "success", text: "Login successful! Welcome back." });
-      login(response.data.accessToken, response.data.refreshToken);
+      login(response.data.accessToken, response.data.refreshToken, rememberMe);
       navigate("/");
     } catch (err) {
+      console.error("Login error:", err);
+      // Xử lý lỗi từ server
+      if (err.response?.status === 403) {
+        console.log("OTP required (caught in error block). Response data:", err.response.data);
+        localStorage.setItem("verifyEmail", err.response.data.email);
+        localStorage.setItem("rememberMe", JSON.stringify(err.response.data.rememberMe));
+        localStorage.setItem(
+          "otpMessage",
+          err.response.data.message || "A new OTP has been sent to your email. Please verify to continue."
+        );
+        try {
+          console.log("Navigating to /verify-otp (error block)");
+          navigate("/verify-otp", { replace: true });
+        } catch (navError) {
+          console.error("Navigation error:", navError);
+          setMessage({
+            type: "error",
+            text: "Failed to redirect to OTP verification page. Please try again.",
+          });
+        }
+        return;
+      }
       setMessage({
         type: "error",
         text:
@@ -75,7 +126,6 @@ function Login() {
           We’re glad to have you here. Let’s get started!
         </p>
       </div>
-
       <div className="w-1/2 bg-gray-100 flex flex-col justify-center items-center px-10 relative">
         {message && (
           <div
@@ -88,7 +138,6 @@ function Login() {
             {message.text}
           </div>
         )}
-
         <div className="w-full max-w-md">
           <div className="flex justify-center mb-4">
             <div className="w-10 h-10 bg-blue-600 rounded-full" />
@@ -96,7 +145,6 @@ function Login() {
           <h2 className="text-2xl font-bold text-gray-800 text-center mb-5">
             Sign In
           </h2>
-
           <form className="flex flex-col gap-4" onSubmit={handleLogin}>
             <div>
               <input
@@ -114,7 +162,6 @@ function Login() {
                 <p className="text-red-500 text-sm">{errors.username}</p>
               )}
             </div>
-
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -138,7 +185,18 @@ function Login() {
                 <p className="text-red-500 text-sm">{errors.password}</p>
               )}
             </div>
-
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="rememberMe"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="mr-2"
+              />
+              <label htmlFor="rememberMe" className="text-sm text-gray-600">
+                Remember Me
+              </label>
+            </div>
             <div className="flex justify-between items-center text-sm">
               <Link
                 to="/forgot-password"
@@ -147,7 +205,6 @@ function Login() {
                 Forgot Password?
               </Link>
             </div>
-
             <button
               type="submit"
               className="bg-blue-500 text-white py-2 rounded mt-2 hover:bg-blue-600"
@@ -155,7 +212,6 @@ function Login() {
               Sign In
             </button>
           </form>
-
           <p className="text-center mt-6 text-sm text-gray-600">
             <Link to="/register" className="text-blue-500 hover:underline">
               Create an account

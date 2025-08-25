@@ -1,28 +1,6 @@
-// const jwt = require('jsonwebtoken');
-// require('dotenv').config();
-
-// const verifyToken = (req, res, next) => {
-//   const authHeader = req.headers.authorization;
-
-//   if (!authHeader || !authHeader.startsWith("Bearer")) {
-//     return res.status(401).json({ message: "Không có token truy cập" });
-//   }
-
-//   const token = authHeader.split(" ")[1];
-
-//   try {
-//     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-//     req.user = decoded; // Gắn user id vào req.user
-//     next();
-//   } catch (error) {
-//     return res.status(401).json({ message: "Token không hợp lệ hoặc đã hết hạn" });
-//   }
-// };
-
-// module.exports = verifyToken;
-
 const mongoose = require("mongoose");
 const { verifyToken } = require("../utils/jwt");
+const User = require("../models/user.model");
 
 module.exports = async (req, res, next) => {
   try {
@@ -30,32 +8,35 @@ module.exports = async (req, res, next) => {
     console.log("Authorization Header:", authorizationHeader);
 
     if (!authorizationHeader || !authorizationHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "Not Login" });
+      return res.status(401).json({ message: "Not authenticated" });
     }
 
     const token = authorizationHeader.split(" ")[1];
     console.log("Token:", token);
 
-    const decoded = verifyToken(token, process.env.JWT_SECRET || 'your-secret-key');
+    const decoded = verifyToken(token, process.env.JWT_ACCESS_SECRET || 'your-access-secret-key');
     if (!decoded) {
-      return res
-        .status(403)
-        .json({ message: "Token không hợp lệ hoặc đã hết hạn" });
+      return res.status(403).json({ message: "Invalid or expired token" });
     }
 
     console.log("Decoded token:", decoded);
 
     if (!decoded.id || !mongoose.Types.ObjectId.isValid(decoded.id)) {
-      console.log("ID không hợp lệ:", decoded?.id);
-      return res.status(400).json({ message: "Token không chứa ID hợp lệ" });
+      console.log("Invalid ID:", decoded?.id);
+      return res.status(400).json({ message: "Token does not contain a valid ID" });
+    }
+
+    // Verify user exists in the database
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      console.log("User not found for ID:", decoded.id);
+      return res.status(404).json({ message: "User not found" });
     }
 
     req.account = { id: decoded.id, role: decoded.role };
     next();
   } catch (error) {
-    console.log("Lỗi trong middleware:", error.message);
-    return res
-      .status(401)
-      .json({ message: "Lỗi xác thực", error: error.message });
+    console.log("Error in middleware:", error.message);
+    return res.status(401).json({ message: "Authentication error", error: error.message });
   }
 };

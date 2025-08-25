@@ -37,13 +37,16 @@ const RegisterForm = () => {
       newErrors.password =
         "Password must be at least 8 characters, including one uppercase, one lowercase, one number, and one special character.";
     }
-    if (!formData.gender) {
-      newErrors.gender = "Please select a gender.";
-    }
+    if (!formData.gender) newErrors.gender = "Please select a gender.";
     if (!formData.dob || !dobRegex.test(formData.dob)) {
       newErrors.dob = "Please enter a valid date of birth (YYYY-MM-DD).";
+    } else {
+      const today = new Date();
+      const dobDate = new Date(formData.dob);
+      if (dobDate > today || dobDate.toDateString() === today.toDateString()) {
+        newErrors.dob = "Date of birth cannot be in the future.";
+      }
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -58,21 +61,20 @@ const RegisterForm = () => {
     e.preventDefault();
     setSuccess("");
 
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     try {
       const response = await axiosInstance.post("/api/register", formData);
 
       if (response.status === 201) {
+        localStorage.setItem("verifyEmail", formData.email); // Store email for OTP verification
         setSuccess(
-          "Registration successful! Redirecting to login page in 3 seconds."
+          "Registration successful! Please verify your account with the OTP sent to your email."
         );
         setErrors({});
         setTimeout(() => {
           setSuccess("");
-          navigate("/login");
+          navigate("/verify-otp");
         }, 3000);
       }
     } catch (err) {
@@ -86,7 +88,6 @@ const RegisterForm = () => {
 
   return (
     <div className="flex h-screen">
-      {/* Left Section */}
       <div className="w-1/2 bg-[#0b1c39] flex flex-col justify-center items-start px-20 text-white">
         <h1 className="text-4xl font-bold mb-6">
           Hello! Ready to tell a new story today?
@@ -95,11 +96,8 @@ const RegisterForm = () => {
           We’re glad to have you here. Let’s get started!
         </p>
       </div>
-
-      {/* Right Section */}
       <div className="w-1/2 bg-gray-100 flex flex-col justify-center items-center px-10">
         <div className="w-full max-w-md">
-          {/* Logo */}
           <div className="flex justify-center mb-4">
             <div className="w-10 h-10 bg-blue-600 rounded-full" />
           </div>
@@ -109,8 +107,6 @@ const RegisterForm = () => {
           >
             Sign Up
           </h2>
-
-          {/* Form */}
           <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
             <div>
               <input
@@ -148,7 +144,12 @@ const RegisterForm = () => {
                 onChange={handleChange}
               />
               {errors.email && (
-                <p className="text-red-500 text-sm">{errors.email}</p>
+                <p
+                  style={{ fontSize: "10px" }}
+                  className="text-red-500 text-sm"
+                >
+                  {errors.email}
+                </p>
               )}
             </div>
             <div>
@@ -192,7 +193,6 @@ const RegisterForm = () => {
                 <p className="text-red-500 text-sm">{errors.dob}</p>
               )}
             </div>
-
             <button
               type="submit"
               className="bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
@@ -200,12 +200,10 @@ const RegisterForm = () => {
               Sign Up
             </button>
           </form>
-
           {errors.general && (
             <p className="text-red-500 text-sm mt-4">{errors.general}</p>
           )}
           {success && <p className="text-green-500 text-sm mt-4">{success}</p>}
-
           <p className="text-center mt-6 text-sm text-gray-600">
             Already have an Account?{" "}
             <Link to="/login" className="text-blue-500 hover:underline">

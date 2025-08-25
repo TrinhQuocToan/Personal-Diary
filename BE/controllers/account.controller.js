@@ -1,11 +1,9 @@
-// account.controller.js (Updated with complete forgotPassword, verifyOTP, and resetPassword)
-
 const bcrypt = require("bcryptjs");
 const User = require("../models/user.model");
 const UserToken = require("../models/userToken.model");
 const { createAccessToken, createRefreshToken, verifyRefreshToken } = require("../utils/jwt");
 const { sendOTPEmail } = require("../utils/emailsOTP");
-const crypto = require("crypto"); // For generating OTP
+const crypto = require("crypto");
 
 const registerAccount = async (req, res) => {
     try {
@@ -57,12 +55,22 @@ const registerAccount = async (req, res) => {
             fullName,
             gender,
             dob,
+            isVerified: false,
         });
 
         await newUser.save();
+
+        const otp = crypto.randomInt(100000, 999999).toString();
+        const otpExpiration = new Date(Date.now() + 5 * 60 * 1000);
+        newUser.otp = otp;
+        newUser.otpExpiration = otpExpiration;
+        await newUser.save();
+
+        await sendOTPEmail(email, otp, "verification");
+
         const { password: _, ...userWithoutPassword } = newUser.toObject();
         return res.status(201).json({
-            message: "Register successfully!",
+            message: "Registration successful! Please verify your account with the OTP sent to your email.",
             user: userWithoutPassword,
         });
     } catch (error) {
@@ -85,7 +93,7 @@ const registerAccount = async (req, res) => {
 
 const loginAccount = async (req, res) => {
     try {
-        const { username, password } = req.body;
+        const { username, password, rememberMe } = req.body;
         const usernameRegex = /^[a-zA-Z0-9_]{4,}$/;
         const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
@@ -106,64 +114,34 @@ const loginAccount = async (req, res) => {
                 message: "Account not registered!",
             });
         }
+
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
             return res.status(401).json({ message: "Username or password is incorrect!" });
         }
 
-        const accessToken = await createAccessToken({ id: user._id, role: user.role });
-        const refreshToken = await createRefreshToken({ id: user._id });
-        await UserToken.findOneAndUpdate(
-            { user: user._id },
-            { re_token: refreshToken },
-            { upsert: true, new: true }
-        );
+        // Gửi OTP mới cho mọi lần đăng nhập
+        const otp = crypto.randomInt(100000, 999999).toString();
+        const otpExpiration = new Date(Date.now() + 5 * 60 * 1000);
+        user.otp = otp;
+        user.otpExpiration = otpExpiration;
+        await user.save();
 
-        return res.status(200).json({
-            message: "Login successfully",
-            accessToken: accessToken,
-            refreshToken: refreshToken,
+        await sendOTPEmail(user.email, otp, "verification");
+        return res.status(403).json({
+            message: "A new OTP has been sent to your email for verification.",
+            email: user.email,
+            rememberMe: !!rememberMe, // Gửi lại rememberMe để frontend sử dụng
         });
+
     } catch (error) {
         return res.status(500).json({ message: "Error while logging in", error: error.message });
     }
 };
 
-const forgotPassword = async (req, res) => {
-    try {
-        const { email } = req.body;
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        if (!email || !emailRegex.test(email)) {
-            return res.status(400).json({ message: "Valid email is required!" });
-        }
-
-        const user = await User.findOne({ email: email.toLowerCase() });
-        if (!user) {
-            return res.status(404).json({ message: "Account not found!" });
-        }
-
-        // Generate OTP
-        const otp = crypto.randomInt(100000, 999999).toString(); // 6-digit OTP
-        const otpExpiration = new Date(Date.now() + 5 * 60 * 1000); // Expires in 5 minutes
-
-        user.otp = otp;
-        user.otpExpiration = otpExpiration;
-        await user.save();
-
-        // Send OTP via email
-        await sendOTPEmail(email, otp);
-
-        return res.status(200).json({ message: "OTP sent to your email. Please check your inbox." });
-    } catch (error) {
-        console.error("Error in forgotPassword:", error);
-        return res.status(500).json({ message: "Server error. Please try again later.", error: error.message });
-    }
-};
-
 const verifyOTP = async (req, res) => {
     try {
-        const { otp, email } = req.body; // Expect email in the request body
+        const { otp, email, rememberMe } = req.body;
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
         if (!otp || !/^\d{6}$/.test(otp)) {
@@ -182,14 +160,62 @@ const verifyOTP = async (req, res) => {
             return res.status(400).json({ message: "Invalid or expired OTP!" });
         }
 
-        // Clear OTP after successful verification
+        // Kích hoạt tài khoản nếu chưa được kích hoạt
+        if (!user.isVerified) {
+            user.isVerified = true;
+        }
+
+        // Xóa OTP sau khi xác thực
         user.otp = null;
         user.otpExpiration = null;
         await user.save();
 
-        return res.status(200).json({ message: "OTP verified successfully!" });
+        // Tạo token với thời gian hết hạn dựa trên rememberMe
+        const accessToken = await createAccessToken({ id: user._id, role: user.role });
+        const refreshToken = await createRefreshToken({ id: user._id }, rememberMe ? '7d' : '1h');
+        await UserToken.findOneAndUpdate(
+            { user: user._id },
+            { re_token: refreshToken },
+            { upsert: true, new: true }
+        );
+
+        return res.status(200).json({
+            message: user.isVerified ? "OTP verified successfully! Account activated and logged in." : "OTP verified successfully! Logged in.",
+            accessToken,
+            refreshToken,
+            rememberMe: !!rememberMe,
+        });
     } catch (error) {
         console.error("Error in verifyOTP:", error);
+        return res.status(500).json({ message: "Server error. Please try again later.", error: error.message });
+    }
+};
+
+const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!email || !emailRegex.test(email)) {
+            return res.status(400).json({ message: "Valid email is required!" });
+        }
+
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) {
+            return res.status(404).json({ message: "Account not found!" });
+        }
+
+        const otp = crypto.randomInt(100000, 999999).toString();
+        const otpExpiration = new Date(Date.now() + 5 * 60 * 1000);
+        user.otp = otp;
+        user.otpExpiration = otpExpiration;
+        await user.save();
+
+        await sendOTPEmail(email, otp, "password-reset");
+
+        return res.status(200).json({ message: "OTP sent to your email. Please check your inbox." });
+    } catch (error) {
+        console.error("Error in forgotPassword:", error);
         return res.status(500).json({ message: "Server error. Please try again later.", error: error.message });
     }
 };
@@ -200,34 +226,33 @@ const resetPassword = async (req, res) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
-        console.log("Received reset password request:", { email, newPassword }); // Debug log
+        console.log("Received reset password request:", { email, newPassword });
 
         if (!email || !emailRegex.test(email)) {
-            console.log("Invalid email format:", email); // Debug log
+            console.log("Invalid email format:", email);
             return res.status(400).json({ message: "Valid email is required!" });
         }
         if (!newPassword || !confirmPassword || !passwordRegex.test(newPassword)) {
-            console.log("Invalid password format:", newPassword); // Debug log
+            console.log("Invalid password format:", newPassword);
             return res.status(400).json({ message: "Password must be at least 8 characters, including one uppercase, one lowercase, one number, and one special character!" });
         }
         if (newPassword !== confirmPassword) {
-            console.log("Passwords do not match:", { newPassword, confirmPassword }); // Debug log
+            console.log("Passwords do not match:", { newPassword, confirmPassword });
             return res.status(400).json({ message: "Confirmed password does not match!" });
         }
 
         const normalizedEmail = email.toLowerCase();
-        console.log("Querying user with email:", normalizedEmail); // Debug log
+        console.log("Querying user with email:", normalizedEmail);
 
         const user = await User.findOne({ email: normalizedEmail });
         if (!user) {
-            console.log("No user found for email:", normalizedEmail); // Debug log
+            console.log("No user found for email:", normalizedEmail);
             return res.status(404).json({ message: "Account not found!" });
         }
 
-        // Prevent reusing the same password
         const isSamePassword = await bcrypt.compare(newPassword, user.password);
         if (isSamePassword) {
-            console.log("New password matches old password for user:", normalizedEmail); // Debug log
+            console.log("New password matches old password for user:", normalizedEmail);
             return res.status(400).json({ message: "New password cannot be the same as the old password!" });
         }
 
@@ -235,7 +260,7 @@ const resetPassword = async (req, res) => {
         user.password = hashedPassword;
 
         await user.save();
-        console.log("Password reset successfully for user:", normalizedEmail); // Debug log
+        console.log("Password reset successfully for user:", normalizedEmail);
 
         return res.json({ message: "Password changed successfully!" });
     } catch (error) {

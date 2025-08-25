@@ -1,5 +1,3 @@
-// ResetPassword.jsx (Updated to use POST instead of PUT)
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "./helper/axiosInstance";
